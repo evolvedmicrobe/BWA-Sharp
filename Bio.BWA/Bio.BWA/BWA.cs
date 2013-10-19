@@ -173,6 +173,11 @@ namespace Bio.BWA.MEM
 			//mimicing idx->bns->anns[a.rid].name
 			refSeqs = *(bntseq_t*)this.bwaidx_as_struct.bns;
 			int nRefs = refSeqs.n_seqs;
+			if (nRefs == 0) {
+				//catastrophic problem here, should never happen.
+				this.Dispose (true);
+				throw new BWAException ("No reference sequences were loaded by BWA.  Please check your file.");
+			}
 			refSeqNames = new string[nRefs];
 			IntPtr annotations = refSeqs.anns;
 			for (int i=0; i<nRefs; i++) {
@@ -224,11 +229,17 @@ namespace Bio.BWA.MEM
 			if (!disposed)
 			{
 				if (disposing) {
+					if(opts!=IntPtr.Zero)
+					{
 					mem_nd_free_opts (opts);
 					opts = IntPtr.Zero;
-					// Dispose managed resources.
-					bwa_idx_destroy (bwaidx);
-					bwaidx = IntPtr.Zero;
+					}
+					if(bwaidx!=IntPtr.Zero)
+					{
+						// Dispose managed resources.
+						bwa_idx_destroy (bwaidx);
+						bwaidx = IntPtr.Zero;
+					}
 				}
 			}
 			disposed = true;
@@ -256,7 +267,6 @@ namespace Bio.BWA.MEM
 		/// </summary>
 		[DllImport("bwacsharp")]
 		private static extern IntPtr mem_opt_init(); 
-
 		/// <summary>
 	 /// Find the aligned regions for one query sequence
 	 ///
@@ -274,7 +284,6 @@ namespace Bio.BWA.MEM
 	/// </summary>
 		[DllImport("bwacsharp")]
 		internal static extern mem_alnreg_v mem_align1(IntPtr mem_opt, IntPtr bwt, IntPtr bntseq, IntPtr pac, int l_seq, IntPtr seq);
-
 		/**
 		 * Generate CIGAR and forward-strand position from alignment region
 		 *
@@ -298,7 +307,6 @@ namespace Bio.BWA.MEM
 		internal static extern void mem_nd_free_uint(IntPtr cigar);
 		[DllImport("bwacsharp")]
 		internal static extern void mem_nd_free_opts(IntPtr cigar);
-
 		/// <summary>
 		/// The index command, used to create an index file, equivalent to "bwa index filename"
 		/// </summary>

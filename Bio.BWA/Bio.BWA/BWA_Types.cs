@@ -123,8 +123,7 @@ namespace Bio.BWA.MEM
 		/// <summary>
 		/// Perform maximally max_matesw rounds of mate-SW for each end, defualt 100
 		/// </summary>
-		int max_matesw;         // perform maximally max_matesw rounds of mate-SW for each end
-	
+		int max_matesw;         // perform maximally max_matesw rounds of mate-SW for each end	
 		//int8_t mat[25];         // scoring matrix; mat[0] == 0 if unset
 		/// <summary>
 		/// The mat.
