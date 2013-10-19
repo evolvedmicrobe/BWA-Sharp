@@ -1,16 +1,20 @@
 ###Description
 
-This library is a C# wrapper around the bwa mem program.  It allows C# (or python or F#) code to call BWA from C# and obtain fully typed SAMAlignment object compatible with .NET Bio classes.  It differs from previous wrappers around this program as it does not require the user to run the "index" command prior to calling this program, and also does not do the interop through a C++ intermediate.  
+This library is a C# wrapper around the bwa mem program.  It allows C# (or python or F#) code to call BWA from obtain fully typed SAMAlignment object compatible with .NET Bio classes.  It differs from previous wrappers around this program as it does not require the user to run the "index" command prior to calling this program, and also does not do the interop through a C++ intermediate.  
 
 Bwa mem was originally written by Heng Li and is available at: http://bio-bwa.sourceforge.net/.  BWA was released under GPLv3, which I trust was a good choice, and so this license also applies to this code. 
 
 This C# library comes as a .dll file.  This file depends on a shared library that is compiled by gcc as 64 bit.  To use on 32 bit systems the user must alter the make file appropriately.
 
-Because the original BWA program has a dependencies on linux, this library only works on posix systems that are little endian and are executing as 64 bit programs.  It therefore must also rely on the gnu build tool chain, so cannot be expected to run as smoothly as CLS compliant code.  Installation issues may occur.
+Because the original BWA program has a dependencies on linux, this library only works on posix systems that are little endian and are executing as 64 bit programs.
 
 ###Getting started
-
-Example coming soon...
+	//Create and query
+	var bwa =new BWA("myFile.fasta");
+	var query = new Sequence(DnaAlphabet.Instance,"CGCATTCCTACTACTCAACTTAAA");
+	var res = bwa.AlignSequence(query);
+	//Free unmanaged resources
+	bwa.Dispose()
 
 ###Citing the original BWA
 
@@ -26,8 +30,7 @@ Example coming soon...
  with BWA-MEM. [arXiv:1303.3997v2][3] [q-bio.GN]. (if you use the BWA-MEM
  algorithm or the **fastmap** command, or want to cite the whole BWA package)
 
-Please note that the last reference is a preprint hosted at [arXiv.org][4]. I
-do not have plan to submit it to a peer-reviewed journal in the near future.
+Please note that the last reference is for bwa mem and is a preprint hosted at [arXiv.org][4]. 
 
 [1]: http://www.ncbi.nlm.nih.gov/pubmed/19451168
 [2]: http://www.ncbi.nlm.nih.gov/pubmed/20080505

@@ -1,10 +1,142 @@
 using System;
 using System.Runtime.InteropServices;
+
 namespace Bio.BWA.MEM
 {
+	//from: typedef uint64_t bwtint_t;
+	using bwtint_t= System.UInt64;//originall unsigned char
 
 
 	//BWA_IDX_ALL= 0x7
+
+//	typedef struct {
+//		int a, b, q, r;         // match score, mismatch penalty and gap open/extension penalty. A gap of size k costs q+k*r
+//		int pen_unpaired;       // phred-scaled penalty for unpaired reads
+//		int pen_clip;           // clipping penalty. This score is not deducted from the DP score.
+//		int w;                  // band width
+//		int zdrop;              // Z-dropoff
+//
+//		int T;                  // output score threshold; only affecting output
+//		int flag;               // see MEM_F_* macros
+//		int min_seed_len;       // minimum seed length
+//		float split_factor;     // split into a seed if MEM is longer than min_seed_len*split_factor
+//		int split_width;        // split into a seed if its occurence is smaller than this value
+//		int max_occ;            // skip a seed if its occurence is larger than this value
+//		int max_chain_gap;      // do not chain seed if it is max_chain_gap-bp away from the closest seed
+//		int n_threads;          // number of threads
+//		int chunk_size;         // process chunk_size-bp sequences in a batch
+//		float mask_level;       // regard a hit as redundant if the overlap with another better hit is over mask_level times the min length of the two hits
+//		float chain_drop_ratio; // drop a chain if its seed coverage is below chain_drop_ratio times the seed coverage of a better chain overlapping with the small chain
+//		int max_ins;            // when estimating insert size distribution, skip pairs with insert longer than this value
+//		int max_matesw;         // perform maximally max_matesw rounds of mate-SW for each end
+//		int8_t mat[25];         // scoring matrix; mat[0] == 0 if unset
+//	} mem_opt_t;
+	/// <summary>
+	/// The options for bwa mem, note not all are currently useful or meaningful with this current class, which
+	/// allows the user to resolve paired end read mis-matches.
+	/// 
+	/// Danger: Changes to the scoring matrix likely will force the user to call bwa_fill_scmat, and so this needs to be wrapped better.
+	/// </summary>
+	[StructLayout(LayoutKind.Sequential)]
+	//TODO: The scoring matix likely causes blittable types, and so 
+	internal struct mem_opt_t {
+		/// <summary>
+		/// Match score, default 1
+		/// </summary>
+		int a;
+		/// <summary>
+		/// Mismatch penalty, default 4
+		/// </summary>
+		int b;
+		/// <summary>
+		/// Gap open penalty. default 6, A gap of size k costs q+k*r
+		/// </summary>
+		int q;
+		/// <summary>
+		/// Gap extension penalty. defualt 1,  A gap of size k costs q+k*r
+		/// </summary>
+		int r;         // match score, mismatch penalty and gap open/extension penalty. A gap of size k costs q+k*r
+		/// <summary>
+		/// phred-scaled penalty for unpaired reads, default 17
+		/// </summary>
+		int pen_unpaired;       // phred-scaled penalty for unpaired reads
+		/// <summary>
+		/// clipping penalty. default 5, This score is not deducted from the DP score.
+		/// </summary>
+		int pen_clip;          
+		/// <summary>
+		/// band width, defualt 100
+		/// </summary>
+		int w;                  
+		/// <summary>
+		/// The Z-dropoff. Default 100
+		/// </summary>
+		int zdrop;             
+		/// <summary>
+		/// Output score threshold; only affecting output. Default 30.
+		/// </summary>
+		int T;                  // output score threshold; only affecting output
+		/// <summary>
+		/// The flag, see MEM_F_* macros, Default 0.
+		/// </summary>
+		int flag;               // see MEM_F_* macros
+		/// <summary>
+		/// The minimum seed length.  Default 19.
+		/// </summary>
+		int min_seed_len;       // minimum seed length
+		/// <summary>
+		/// The split_factor. Default 1.5. Split into a seed if MEM is longer than min_seed_len*split_factor
+		/// </summary>
+		float split_factor;     // split into a seed if MEM is longer than min_seed_len*split_factor
+		/// <summary>
+		/// The split_width. Default 10 Split into a seed if its occurence is smaller than this value
+		/// </summary>
+		int split_width;        // split into a seed if its occurence is smaller than this value
+		/// <summary>
+		/// Default 10000
+		/// </summary>
+		int max_occ;            // skip a seed if its occurence is larger than this value
+		/// <summary>
+		/// The max_chain_gap. Default 10000
+		/// </summary>
+		int max_chain_gap;      // do not chain seed if it is max_chain_gap-bp away from the closest seed
+		/// <summary>
+		/// The number of threads. Default 1.
+		/// </summary>
+		int n_threads;          // number of threads
+		/// <summary>
+		/// Process chunk_size-bp sequences in a batch.  Default 10000000
+		/// </summary>
+		int chunk_size;         // process chunk_size-bp sequences in a batch
+		/// <summary>
+		/// The mask_level. Default 0.50, regard a hit as redundant if the overlap with another better hit is over mask_level times the min length of the two hits
+		/// </summary>
+		float mask_level;       // regard a hit as redundant if the overlap with another better hit is over mask_level times the min length of the two hits
+		/// <summary>
+		/// The chain_drop_ratio. Default 0.50. Drop a chain if its seed coverage is below chain_drop_ratio times the seed coverage of a better chain overlapping with the small chain
+		/// </summary>
+		float chain_drop_ratio; // drop a chain if its seed coverage is below chain_drop_ratio times the seed coverage of a better chain overlapping with the small chain
+		/// <summary>
+		/// Default - 10000 when estimating insert size distribution, skip pairs with insert longer than this value
+		/// </summary>
+		int max_ins;            // when estimating insert size distribution, skip pairs with insert longer than this value
+		/// <summary>
+		/// Perform maximally max_matesw rounds of mate-SW for each end, defualt 100
+		/// </summary>
+		int max_matesw;         // perform maximally max_matesw rounds of mate-SW for each end
+	
+		//int8_t mat[25];         // scoring matrix; mat[0] == 0 if unset
+		/// <summary>
+		/// The mat.
+		/// </summary>
+		[MarshalAs(UnmanagedType.ByValArray, SizeConst=25)] 
+		public byte[] mat;
+
+	}
+
+
+
+
 
 	//original below
 //	typedef struct {
@@ -21,7 +153,7 @@ namespace Bio.BWA.MEM
 //		bwtint_t *sa;
 //	} bwt_t;
 
-	using bwtint_t= System.UInt64;//originall unsigned char
+	
 	[StructLayout(LayoutKind.Sequential)]
 	internal struct bwt_t
 	{

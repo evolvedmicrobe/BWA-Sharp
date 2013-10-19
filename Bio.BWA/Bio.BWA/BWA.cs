@@ -13,6 +13,8 @@ namespace Bio.BWA.MEM
 	public class BWA : IDisposable
 	{
 		private IntPtr bwaidx; //bwaidx_t*
+		//TODO: Converrt to the actual structure after profiling to ensure blittable types, right now 
+		//the scoring matrix needs to be manually updated to after calls, so this should be wrapped.
 		private IntPtr opts;//mem_opt_t*
 		private bwaidx_t bwaidx_as_struct;
 		bntseq_t refSeqs;
@@ -48,7 +50,12 @@ namespace Bio.BWA.MEM
 		}
 		/// <summary>
 		/// Returns the best alignment for that sequence, with information about
-		/// other alignments in the meta-data under "NH" meta-tag tag, for number of other alignments
+		/// other alignments in the meta-data under "NH" meta-tag tag, for number of other alignments.
+		/// 
+		/// Note that this does not handle paired end data, and like all of bwa mem, the mapping quality does not
+		/// take read quality scores in to account.  Also, bwa mem does not places mismatches in cigars, so no assumptions
+		/// should be made about what a "60M" means.
+		///
 		/// </summary>
 		/// <returns>The sequence.</returns>
 		/// <param name="seq">Sequence to align</param>
@@ -114,7 +121,7 @@ namespace Bio.BWA.MEM
 						toReturn.QName = seq.ID;
 						toReturn.QuerySequence = seq;
 						toReturn.RName = refSeqNames [a.rid];
-						toReturn.Pos = a.pos;
+						toReturn.Pos = (int)a.pos;
 						if (addMetaDataInformation) {
 							//Edit distance
 							toReturn.Metadata ["NM"] = editDistance;
@@ -122,7 +129,7 @@ namespace Bio.BWA.MEM
 							toReturn.Metadata ["AS"] = a.score;
 							//other alignments found
 							toReturn.Metadata ["NH"] = n_aligns;
-							//get sub score here as well
+							//get second best score here as well
 							toReturn.Metadata ["XS"] = a.sub.ToString ();
 						}
 					}
@@ -147,7 +154,7 @@ namespace Bio.BWA.MEM
 				}
 			}
 			//load the index
-			bwaidx = loadIndex (fname);
+			bwaidx = _loadIndex (fname);
 			if (bwaidx == IntPtr.Zero) {
 				throw new BWAException("The BWA files indexed genome failed to load.  Ensure it is in the correct place" +
 				                       "and that the bwa index command has been run.");
@@ -179,7 +186,28 @@ namespace Bio.BWA.MEM
 			}
 		}
 
-		public IntPtr loadIndex(string filename)
+
+		/// <summary>
+		/// Program taken from c code that updates the scoring matrix in the mem_opts_t structure, this should be called when parameters are changed.
+		/// original third argument type was: int8_t mat[25]
+		/// </summary>
+		/// <param name="a">match score</param>
+		/// <param name="b">mimatch penalty</param>
+		private void bwa_fill_scmat(int match, int mismatch, sbyte[] mat)
+		{
+			sbyte a = (sbyte)match;
+			sbyte b = (sbyte)mismatch;
+			int i, j, k;
+			for (i = k = 0; i < 4; ++i) {
+				for (j = 0; j < 4; ++j)
+					mat[k++] = i == j ? a : (sbyte)-b;
+				mat[k++] = (sbyte)-1; // ambiguous base
+			}
+			for (j = 0; j < 5; ++j) mat[k++] = (sbyte)-1;
+		}
+
+
+		public IntPtr _loadIndex(string filename)
 		{
 			return bwa_idx_load (filename, 0x7);//load all
 
