@@ -5,10 +5,11 @@ WRAP_MALLOC=-DUSE_MALLOC_WRAPPERS
 AR=			ar
 DFLAGS=		-DHAVE_PTHREAD $(WRAP_MALLOC)
 LOBJS=		utils.o kstring.o ksw.o bwt.o bntseq.o bwa.o bwamem.o bwamem_pair.o malloc_wrap.o
-AOBJS=		QSufSort.o bwt_gen.o bwase.o bwaseqio.o bwtgap.o bwtaln.o bamlite.o \
-			is.o bwtindex.o bwape.o kopen.o pemerge.o \
+AOBJS=		QSufSort.o bwtindex.o bwt_gen.o bwase.o bwaseqio.o bwtgap.o bwtaln.o bamlite.o \
+			is.o bwape.o kopen.o pemerge.o \
 			bwtsw2_core.o bwtsw2_main.o bwtsw2_aux.o bwt_lite.o \
 			bwtsw2_chain.o fastmap.o bwtsw2_pair.o
+BWACSHARPOBJS= utils.o kstring.o ksw.o bwt.o bntseq.o bwa.o bwamem.o bwamem_pair.o bwtindex.o
 PROG=		bwa
 INCLUDES=	
 LIBS=		-lm -lz -lpthread
@@ -23,6 +24,12 @@ all:$(PROG)
 
 bwa:libbwa.a $(AOBJS) main.o
 		$(CC) $(CFLAGS) $(DFLAGS) $(AOBJS) main.o -o $@ -L. -lbwa $(LIBS)
+
+csharplib:libbwa.a $(LOBJS) $(AOBJS) main.o
+		$(CC) $(CFLAGS) -shared $(DFLAGS) -o libbwacsharp.so main.o $(AOBJS) $(LOBJS) -L. -lbwa  $(LIBS) 
+
+csharplib32:libbwa.a $(LOBJS) $(AOBJS) main.o
+		$(CC) $(CFLAGS) -m32 -shared $(DFLAGS) -o libbwacsharp.so main.o $(AOBJS) $(LOBJS) -L. -lbwa  $(LIBS) 
 
 bwamem-lite:libbwa.a example.o
 		$(CC) $(CFLAGS) $(DFLAGS) example.o -o $@ -L. -lbwa $(LIBS)
@@ -56,7 +63,7 @@ bwt_gen.o: QSufSort.h malloc_wrap.h
 bwt_lite.o: bwt_lite.h malloc_wrap.h
 bwtaln.o: bwtaln.h bwt.h bwtgap.h utils.h bwa.h bntseq.h malloc_wrap.h
 bwtgap.o: bwtgap.h bwt.h bwtaln.h malloc_wrap.h
-bwtindex.o: bntseq.h bwt.h utils.h malloc_wrap.h
+bwtindex.o: bntseq.h bwt.h utils.h malloc_wrap.h bwtindex.h
 bwtsw2_aux.o: bntseq.h bwt_lite.h utils.h bwtsw2.h bwt.h kstring.h
 bwtsw2_aux.o: malloc_wrap.h bwa.h ksw.h kseq.h ksort.h
 bwtsw2_chain.o: bwtsw2.h bntseq.h bwt_lite.h bwt.h malloc_wrap.h ksort.h
@@ -66,6 +73,7 @@ bwtsw2_main.o: bwt.h bwtsw2.h bntseq.h bwt_lite.h utils.h bwa.h
 bwtsw2_pair.o: utils.h bwt.h bntseq.h bwtsw2.h bwt_lite.h kstring.h
 bwtsw2_pair.o: malloc_wrap.h ksw.h
 example.o: bwamem.h bwt.h bntseq.h bwa.h kseq.h malloc_wrap.h
+csharp.o: bwamem.h bwt.h bntseq.h bwa.h kseq.h malloc_wrap.h 
 fastmap.o: bwa.h bntseq.h bwt.h bwamem.h kvec.h malloc_wrap.h utils.h kseq.h
 is.o: malloc_wrap.h
 kopen.o: malloc_wrap.h

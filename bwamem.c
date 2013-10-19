@@ -763,16 +763,26 @@ void mem_aln2sam(const bntseq_t *bns, kstring_t *str, bseq1_t *s, int n, const m
 
 int mem_approx_mapq_se(const mem_opt_t *opt, const mem_alnreg_t *a)
 {
+	//set sub either equal to the second best smith waterman score or 
+	//the seddlength times the match score
 	int mapq, l, sub = a->sub? a->sub : opt->min_seed_len * opt->a;
 	double identity;
+	//smith waterman score of a tandem hit > second best sw score, set appropriately
 	sub = a->csub > sub? a->csub : sub;
+	//if second best score is above or equal to best, return 0
 	if (sub >= a->score) return 0;
+	//set length as longest read
 	l = a->qe - a->qb > a->re - a->rb? a->qe - a->qb : a->re - a->rb;
+	//set score equal to zero if no top score, or 
+    //mem_mapq_coef=30.0, seedcov is length of regions covered by seed
 	mapq = a->score? (int)(MEM_MAPQ_COEF * (1. - (double)sub / a->score) * log(a->seedcov) + .499) : 0;
 	identity = 1. - (double)(l * opt->a - a->score) / (opt->a + opt->b) / l;
 	mapq = identity < 0.95? (int)(mapq * identity * identity + .499) : mapq;
+	//subtract 
 	if (a->sub_n > 0) mapq -= (int)(4.343 * log(a->sub_n+1) + .499);
+	//max at 60
 	if (mapq > 60) mapq = 60;
+	//min at zero
 	if (mapq < 0) mapq = 0;
 	return mapq;
 }
@@ -850,6 +860,20 @@ mem_alnreg_v mem_align1(const mem_opt_t *opt, const bwt_t *bwt, const bntseq_t *
 	mem_mark_primary_se(opt, ar.n, ar.a);
 	free(seq);
 	return ar;
+}
+//to free the mem_aln_t
+void mem_nd_free_mem_aln_t(mem_aln_t* pointer)
+{
+	free(pointer);
+}
+//to free the cigar string
+void mem_nd_free_uint(uint32_t* pointer)
+{
+	free(pointer);
+}
+void mem_nd_free_opts(mem_opt_t * pointer)
+{
+	free(pointer);
 }
 
 // This routine is only used for the API purpose

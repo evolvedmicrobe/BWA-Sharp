@@ -1,6 +1,6 @@
 using System;
 using System.Runtime.InteropServices;
-namespace Bio.BWA
+namespace Bio.BWA.MEM
 {
 
 
@@ -70,6 +70,53 @@ namespace Bio.BWA
 		internal IntPtr pac;
 	} 
 
+//	typedef struct {
+//		int64_t offset;
+//		int32_t len;
+//		int32_t n_ambs;
+//		uint32_t gi;
+//		char *name, *anno;
+//	} bntann1_t;
+
+	[StructLayout(LayoutKind.Sequential)]
+	internal struct bntann1_t{
+		internal long offset;
+		internal int len;
+		internal int n_ambs;
+		internal uint gi;
+		/// <summary>
+		/// char*
+		/// </summary>
+		internal IntPtr name;
+		/// <summary>
+		/// char*
+		/// </summary>
+		internal IntPtr anno;
+
+	}
+
+
+	//			//typedef struct {
+//				int64_t l_pac;
+//				int32_t n_seqs;
+//				uint32_t seed;
+//				bntann1_t *anns; // n_seqs elements
+//				int32_t n_holes;
+//				bntamb1_t *ambs; // n_holes elements
+//				FILE *fp_pac;
+	//		} bntseq_t;
+	[StructLayout(LayoutKind.Sequential)]
+	internal struct bntseq_t{
+		internal long l_pac;
+		internal int n_seqs;
+		internal uint seed;
+		internal IntPtr anns; // n_seqs elements
+		internal int n_holes;
+		internal IntPtr ambs; // n_holes elements
+		internal IntPtr fp_pac;
+	}
+
+
 
 //	typedef struct {
 //		int64_t rb, re; // [rb,re): reference sequence in the alignment
@@ -130,7 +177,7 @@ namespace Bio.BWA
 		/// </summary>
 		internal int seedcov;    // length of regions coverged by seeds
 		/// <summary>
-		/// ndex of the parent hit shadowing the current hit; <0 if primary
+		/// Index of the parent hit shadowing the current hit; <0 if primary
 		/// </summary>
 		internal int secondary;  // index of the parent hit shadowing the current hit; <0 if primary
    	}
@@ -180,7 +227,7 @@ namespace Bio.BWA
 		/// </summary>
 		internal int n_cigar;
 		/// <summary>
-		/// Pointer to cigar in bam encoding
+		/// Pointer to cigar in bam encoding, this is a uint32
 		/// </summary>
 		internal IntPtr cigar;
 

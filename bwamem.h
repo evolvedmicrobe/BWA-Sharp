@@ -5,6 +5,7 @@
 #include "bntseq.h"
 #include "bwa.h"
 
+
 #define MEM_MAPQ_COEF 30.0
 #define MEM_MAPQ_MAX  60
 
@@ -61,6 +62,7 @@ typedef struct {
 	double avg, std; // mean and stddev of the insert size distribution
 } mem_pestat_t;
 
+
 typedef struct { // This struct is only used for the convenience of API.
 	int64_t pos;     // forward strand 5'-end mapping position
 	int rid;         // reference sequence index in bntseq_t; <0 for unmapped
@@ -71,7 +73,6 @@ typedef struct { // This struct is only used for the convenience of API.
 
 	int score, sub;
 } mem_aln_t;
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -152,6 +153,9 @@ extern "C" {
 	 * @param pes    inferred insert size distribution (output)
 	 */
 	void mem_pestat(const mem_opt_t *opt, int64_t l_pac, int n, const mem_alnreg_v *regs, mem_pestat_t pes[4]);
+
+
+	
 
 #ifdef __cplusplus
 }

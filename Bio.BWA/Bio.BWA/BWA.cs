@@ -1,48 +1,221 @@
 using System;
 using System.Runtime.InteropServices;
+using System.Linq;
+using System.IO;
+using Bio.IO.SAM;
+using Bio.IO.BAM;
+using System.Collections;
+using System.Collections.Generic;
+using System.Text;
 
-namespace Bio.BWA
+namespace Bio.BWA.MEM
 {
-	public class BWA
+	public class BWA : IDisposable
 	{
 		private IntPtr bwaidx; //bwaidx_t*
-		private IntPtr opt;//mem_opt_t*
-		public unsafe BWA ()
+		private IntPtr opts;//mem_opt_t*
+		private bwaidx_t bwaidx_as_struct;
+		bntseq_t refSeqs;
+		private string[] refSeqNames;
+		/// <summary>
+		/// Suffixes of files that should be present if the file is indexed
+		/// </summary>
+		private string[] requiredFileSuffixes = new string[]{".amb",".ann",".bwt",".pac",".sa"};
+		/// <summary>
+		/// Initializes a new instance of the <see cref="Bio.BWA.MEM.BWA"/> class.  This class will requires
+		/// write permissions on the source directory of an index has not yet been made.
+		/// </summary>
+		/// <param name="fastaFile">Fasta file.</param>
+		public BWA (string fastaFile)
 		{
 			if (!BitConverter.IsLittleEndian) {
-				throw new Exception("We assumed little endian!!!");		
+				throw new BWAException("The BWA interface can only be used on little-endian machines");		
 				}
-			Console.WriteLine (System.IO.Directory.GetCurrentDirectory ());
-			bwaidx = LoadIndex ("/Users/ndelaney/bwa-0.7.5a/TestData/MT.fasta");
-			if (bwaidx == IntPtr.Zero) {
-				throw new BWAException("The BWA files indexed genome failed to load.  Ensure it is in the correct place" +
-					"and that the bwa index command has been run.");
+
+			if(String.IsNullOrEmpty(fastaFile) || fastaFile.Contains(" "))
+			{
+				fastaFile = fastaFile==null ? "File was null" : fastaFile;
+				throw new BWAException("The fasta file given to use with BWA either was null or contained spaces, which are not allowed in BWA." +
+				                       "\nFasta File was: "+fastaFile);
 			}
-			opt = mem_opt_init ();
-			bwaidx_t tmp = *(bwaidx_t*)bwaidx;
-			///from position 5110 and of length 65, the first 60 bases match, the next 5 do not.
-			string test = "CGCATTCCTACTACTCAACTTAAACTCCAGCACCACGACCCTACTACTATCTCGCACCTGCTTTT";
-			//it's output should be equal to:"test	+	MT	5110	60	60M5S	0"
-			byte[] data = System.Text.Encoding.ASCII.GetBytes (test);
+			loadIndex (fastaFile);
+			//load options
+			//TODO: allow access to options and changing there-of
+			opts = mem_opt_init ();
+			if (opts == IntPtr.Zero) {
+				throw new BWAException("Could not load the BWA default options");
+			}
+		}
+		/// <summary>
+		/// Returns the best alignment for that sequence, with information about
+		/// other alignments in the meta-data under "NH" meta-tag tag, for number of other alignments
+		/// </summary>
+		/// <returns>The sequence.</returns>
+		/// <param name="seq">Sequence to align</param>
+		/// <param name="addMetaDataInformat"> Add meta-data? Provides more information at a slight performance cost </param>
+		public unsafe SAMAlignedSequence AlignSequence(ISequence seq,bool addMetaDataInformation=true)
+		{
+			if (seq == null) {
+				throw new ArgumentNullException ("seq");
+			}
+			SAMAlignedSequence toReturn = null;
+			//TODO: Validate the alphabet and sequence are of DNA type
+			byte[] data = seq.ToArray ();
 			fixed(byte * pdata=data)
 			{
-				mem_alnreg_v ar=mem_align1(opt,tmp.bwt,tmp.bns,tmp.pac,data.Length,(IntPtr)pdata);
-			
+				//get the alignments
+				//TODO: Who is responsible for cleaning out this memory in this ar variable???
+				//I think structs do not need to be freed, but best to check
+				mem_alnreg_v ar=mem_align1(opts,bwaidx_as_struct.bwt,
+				                           bwaidx_as_struct.bns,
+				                           bwaidx_as_struct.pac,
+				                           data.Length,
+				                           (IntPtr)pdata);
+				//cycle through them returning the best
 				int n_aligns = (int)ar.n;
+				//save memory location to free later
+				IntPtr initialMemLocation = ar.a;
 				for (int i=0; i<n_aligns; i++) {
 					mem_alnreg_t curAlign = *(mem_alnreg_t*)ar.a;
 					if(curAlign.secondary<0)//ignore secondary alignments
 					{
+						//get forward strand positiion and cigar
 						//a = mem_reg2aln(opt, idx->bns, idx->pac, ks->seq.l, ks->seq.s, &ar.a[i]); // get forward-strand position and CIGAR
-						mem_aln_t a = mem_reg2aln (opt, tmp.bns, tmp.pac, data.Length, (IntPtr)pdata, ar.a);
-
+						mem_aln_t a = mem_reg2aln (opts, bwaidx_as_struct.bns,bwaidx_as_struct.pac, data.Length, (IntPtr)pdata, ar.a);
+						//unpack the cigar string, which is encoded in the BAM format
+						IntPtr originalCigarLocation = a.cigar;
+						uint* cigarPointer = (uint*)a.cigar;
+						StringBuilder cigarBuilder=new StringBuilder();
+						for(int k=0;k<a.n_cigar;++k)
+						{
+							uint curCigar = *cigarPointer;
+							uint opLength = curCigar >> 4;
+							char cigarOp = "MIDSH"[(int)(curCigar & 0xf)];
+							cigarBuilder.Append (opLength.ToString ());
+							cigarBuilder.Append(cigarOp.ToString());
+							cigarPointer++;
+							 //"0 is +, 1 is -
+						}
+						//free memory for cigar string
+						mem_nd_free_uint (originalCigarLocation);
+						//first bit has the reversed or not
+						bool isReversed = (a.isRevAndMapQAndNM & 1) == 0 ? false : true;
+						//is_rev:1, mapq:8, NM:23;
+						//next 8 are the mapping quality
+						byte mapq=(byte) ((a.isRevAndMapQAndNM>>1)&0xFF);
+						//and last 23 are edit distance
+						uint editDistance=a.isRevAndMapQAndNM>>9;
+						//now let's make a new sequence
+						toReturn = new SAMAlignedSequence ();
+						//flag includes 0x100 for secondary alignment, and I believe that is the only one it could be at this point
+						toReturn.Flag = (SAMFlags)a.flag;
+						toReturn.MapQ = (int)mapq;
+						toReturn.CIGAR = cigarBuilder.ToString ();
+						toReturn.QName = seq.ID;
+						toReturn.QuerySequence = seq;
+						toReturn.RName = refSeqNames [a.rid];
+						toReturn.Pos = a.pos;
+						if (addMetaDataInformation) {
+							//Edit distance
+							toReturn.Metadata ["NM"] = editDistance;
+							//alignment score
+							toReturn.Metadata ["AS"] = a.score;
+							//other alignments found
+							toReturn.Metadata ["NH"] = n_aligns;
+							//get sub score here as well
+							toReturn.Metadata ["XS"] = a.sub.ToString ();
+						}
 					}
 					ar.a += sizeof(mem_alnreg_t);
-					Console.WriteLine (curAlign.rb);
+				}
+				//free memory
+				mem_nd_free_mem_aln_t (initialMemLocation);
+			}
+			return toReturn;
+		}
+		private unsafe void loadIndex(string fname)
+		{
+			//see if we need the index, and load if so
+			DirectoryInfo di= System.IO.Directory.GetParent(fname);
+			var presentNames= di.GetFiles().Select(x=>x.FullName).ToList();
+			presentNames.Select (x => {Console.WriteLine (x); return 0;});
+			var filesNotPresent = requiredFileSuffixes.Select (x => fname + x).Any (x => !presentNames.Contains (x));
+			if (filesNotPresent) {
+				int res=bwa_index (2, new string[] {"index",fname});
+				if (res != 0) {
+					throw new BWAException ("Could not index fasta file: " + fname);
 				}
 			}
-				Console.WriteLine ("Success!");
+			//load the index
+			bwaidx = loadIndex (fname);
+			if (bwaidx == IntPtr.Zero) {
+				throw new BWAException("The BWA files indexed genome failed to load.  Ensure it is in the correct place" +
+				                       "and that the bwa index command has been run.");
+			}
+			bwaidx_as_struct = *(bwaidx_t*)bwaidx;
+			getReferenceSequenceInformation ();
 		}
+		/// <summary>
+		/// Gets the reference sequence information by extracting it from the pointers
+		/// </summary>
+		private unsafe void getReferenceSequenceInformation()
+		{
+			//the reference sequence is held in an index, the second item of which, bns, is a pointer to a
+			// struct of bntseq_t so the trick will be
+			//to grab the reference names and lengths from these.
+			//mimicing idx->bns->anns[a.rid].name
+			refSeqs = *(bntseq_t*)this.bwaidx_as_struct.bns;
+			int nRefs = refSeqs.n_seqs;
+			refSeqNames = new string[nRefs];
+			IntPtr annotations = refSeqs.anns;
+			for (int i=0; i<nRefs; i++) {
+				bntann1_t refdata = *(bntann1_t*)(annotations);
+				//now this is some crap, keep traversing the pointer until we find something null
+				List<byte> refName = new List<byte> ();
+				sbyte* curSpot = (sbyte*)refdata.name;
+				refSeqNames [i] = new string (curSpot);
+
+				annotations += sizeof(bntann1_t);
+			}
+		}
+
+		public IntPtr loadIndex(string filename)
+		{
+			return bwa_idx_load (filename, 0x7);//load all
+
+		}
+		#region CLEANUP_UNMANAGED_RESOURCES
+		protected bool disposed=false;
+		public void Dispose()
+		{
+			Dispose (true);
+			GC.SuppressFinalize (this);
+		}
+		protected virtual void Dispose(bool disposing)
+		{
+			if (!disposed)
+			{
+				if (disposing) {
+					mem_nd_free_opts (opts);
+					opts = IntPtr.Zero;
+					// Dispose managed resources.
+					bwa_idx_destroy (bwaidx);
+					bwaidx = IntPtr.Zero;
+				}
+			}
+			disposed = true;
+		}
+		/// <summary>
+		/// Releases unmanaged resources and performs other cleanup operations before the <see cref="Bio.BWA.BWA"/> is
+		/// reclaimed by garbage collection.
+		/// </summary>
+		~BWA()
+		{
+			this.Dispose (true);
+		}
+		#endregion
+
+		#region EXTERNAL_FUNCTIONS
 		/// <summary>
 		/// Function that loads the index file
 		/// </summary>
@@ -70,32 +243,41 @@ namespace Bio.BWA
 	 /// @param seq    query sequence
 	 ///
 	 /// @return       list of aligned regions.
-/// </summary>
-	[DllImport("bwacsharp")]
-	internal static extern mem_alnreg_v mem_align1(IntPtr mem_opt, IntPtr bwt, IntPtr bntseq, IntPtr pac, int l_seq, IntPtr seq);
+	/// </summary>
+		[DllImport("bwacsharp")]
+		internal static extern mem_alnreg_v mem_align1(IntPtr mem_opt, IntPtr bwt, IntPtr bntseq, IntPtr pac, int l_seq, IntPtr seq);
 
-		public IntPtr LoadIndex(string filename)
-		{
-			return bwa_idx_load (filename, 0x7);//load all
+		/**
+		 * Generate CIGAR and forward-strand position from alignment region
+		 *
+		 * @param opt    alignment parameters
+		 * @param bns    Information of the reference
+		 * @param pac    2-bit encoded reference
+		 * @param l_seq  length of query sequence
+		 * @param seq    query sequence
+		 * @param ar     one alignment region
+		 *
+		 * @return       CIGAR, strand, mapping quality and forward-strand position
+		 */
+		[DllImport("bwacsharp")]
+		internal static extern mem_aln_t mem_reg2aln(IntPtr mem_opt, IntPtr bns, IntPtr pac, int l_seq, IntPtr seq, IntPtr ptrTo_mem_alnreg_t);
+		//cleanup functions
+		[DllImport("bwacsharp")]
+		internal static extern void mem_nd_free_mem_aln_t(IntPtr pnt);
+		[DllImport("bwacsharp")]
+		internal static extern void bwa_idx_destroy (IntPtr idx);
+		[DllImport("bwacsharp")]
+		internal static extern void mem_nd_free_uint(IntPtr cigar);
+		[DllImport("bwacsharp")]
+		internal static extern void mem_nd_free_opts(IntPtr cigar);
 
-		}
-	
-
-	/**
-	 * Generate CIGAR and forward-strand position from alignment region
-	 *
-	 * @param opt    alignment parameters
-	 * @param bns    Information of the reference
-	 * @param pac    2-bit encoded reference
-	 * @param l_seq  length of query sequence
-	 * @param seq    query sequence
-	 * @param ar     one alignment region
-	 *
-	 * @return       CIGAR, strand, mapping quality and forward-strand position
-	 */
-	[DllImport("bwacsharp")]
-	internal static extern mem_aln_t mem_reg2aln(IntPtr mem_opt, IntPtr bns, IntPtr pac, int l_seq, IntPtr seq, IntPtr ptrTo_mem_alnreg_t);
+		/// <summary>
+		/// The index command, used to create an index file, equivalent to "bwa index filename"
+		/// </summary>
+		/// <param name="argc">Number of arguments</param>
+		/// <param name="argv">string of all the arguments </param>
+		[DllImport("bwacsharp")] internal static extern int bwa_index(int argc, string[] argv); // the "index" command
+	#endregion
 	}
-
 }
 

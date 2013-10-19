@@ -1,6 +1,6 @@
 using System;
 
-namespace Bio.BWA
+namespace Bio.BWA.MEM
 {
 	public class BWAException : Exception
 	{

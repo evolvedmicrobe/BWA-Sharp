@@ -1,0 +1,1 @@
+This is a folder containing the BWA aligner, the point of this code is to test building bindings to BWA from C#, I am hoping to make this possible by only changing the make file

@@ -34,6 +34,7 @@
 #include "bntseq.h"
 #include "bwt.h"
 #include "utils.h"
+#include "bwtindex.h"
 
 #ifdef _DIVBWT
 #include "divsufsort.h"
