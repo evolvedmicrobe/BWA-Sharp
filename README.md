@@ -1,6 +1,6 @@
 ###Introduction
 
-This is a C# wrapper around the bwa mem program API.  This code allows you to call BWA from C# (or python or F#) and returns fully typed objects.  Bwa mem was originally written by Heng Li and is available at: http://bio-bwa.sourceforge.net/.  BWA was released under GPLv3, which I trust was a good choice, and so this license also applies to this code. 
+This library is a C# wrapper around the bwa mem program API.  This code allows you to call BWA from C# (or python or F#) and obtain fully typed SAMAlignment object compatible with .NET Bio classes.  It differs from previous wrappers as it does not require the user to run the index command prior to calling this program, and also does not to the interop through a C++ layer.  Bwa mem was originally written by Heng Li and is available at: http://bio-bwa.sourceforge.net/.  BWA was released under GPLv3, which I trust was a good choice, and so this license also applies to this code. 
 
 This C# library comes as a .dll file.  This file depends on a shared library that is compiled by gcc as 64 bit.  To use on 32 bit systems the user must alter the make file appropriately.
 
