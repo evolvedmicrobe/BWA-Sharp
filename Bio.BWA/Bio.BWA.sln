@@ -5,6 +5,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bio.BWA", "Bio.BWA\Bio.BWA.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestBWA", "TestBWA\TestBWA.csproj", "{911D6858-788E-4912-A0C6-8BBB64501AA7}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ccs_caller", "ccs_caller\ccs_caller.csproj", "{F5F88D58-4750-49F0-AEB2-18739BA249EF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x86 = Debug|x86
@@ -19,8 +21,9 @@ Global
 		{911D6858-788E-4912-A0C6-8BBB64501AA7}.Debug|x86.Build.0 = Debug|x86
 		{911D6858-788E-4912-A0C6-8BBB64501AA7}.Release|x86.ActiveCfg = Release|x86
 		{911D6858-788E-4912-A0C6-8BBB64501AA7}.Release|x86.Build.0 = Release|x86
-	EndGlobalSection
-	GlobalSection(MonoDevelopProperties) = preSolution
-		StartupItem = TestBWA\TestBWA.csproj
+		{F5F88D58-4750-49F0-AEB2-18739BA249EF}.Debug|x86.ActiveCfg = Debug|x86
+		{F5F88D58-4750-49F0-AEB2-18739BA249EF}.Debug|x86.Build.0 = Debug|x86
+		{F5F88D58-4750-49F0-AEB2-18739BA249EF}.Release|x86.ActiveCfg = Release|x86
+		{F5F88D58-4750-49F0-AEB2-18739BA249EF}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 EndGlobal

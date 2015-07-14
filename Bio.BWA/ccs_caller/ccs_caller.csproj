@@ -1,0 +1,81 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
+    <ProjectGuid>{F5F88D58-4750-49F0-AEB2-18739BA249EF}</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>ccs_caller</RootNamespace>
+    <AssemblyName>ccs_caller</AssemblyName>
+    <TargetFrameworkVersion>v4.5.1</TargetFrameworkVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug</OutputPath>
+    <DefineConstants>DEBUG;</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <PlatformTarget>x86</PlatformTarget>
+    <ConsolePause>false</ConsolePause>
+    <EnvironmentVariables>
+      <EnvironmentVariables>
+        <Variable name="LD_LIBRARY_PATH" value="/Users/nigel/lib/lib" />
+      </EnvironmentVariables>
+    </EnvironmentVariables>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
+    <DebugType>full</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release</OutputPath>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <Externalconsole>true</Externalconsole>
+    <PlatformTarget>x86</PlatformTarget>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="Bio.Core">
+      <HintPath>..\packages\NetBioCore.PCL.2.0.141118\lib\net45\Bio.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="Bio.Platform.Helpers">
+      <HintPath>..\packages\NetBioCore.PCL.2.0.141118\lib\net45\Bio.Platform.Helpers.dll</HintPath>
+    </Reference>
+    <Reference Include="Bio.Desktop">
+      <HintPath>..\packages\NetBioCore.PCL.2.0.141118\lib\net45\Bio.Desktop.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="CCSReadAligner.cs" />
+    <Compile Include="Variant\SNPVariant.cs" />
+    <Compile Include="Variant\Variant.cs" />
+    <Compile Include="Variant\VariantCaller.cs" />
+    <Compile Include="Variant\IndelVariant.cs" />
+    <Compile Include="AlignedCCSRead.cs" />
+    <Compile Include="CigarUtils.cs" />
+    <Compile Include="BPandQV.cs" />
+    <Compile Include="CigarOperations.cs" />
+    <Compile Include="ZMWInfo.cs" />
+    <Compile Include="InformationSelectors.cs" />
+    <Compile Include="VariantInfo.cs" />
+    <Compile Include="RegionTree.cs" />
+    <Compile Include="IntervalFile.cs" />
+    <Compile Include="Region.cs" />
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <ItemGroup>
+    <ProjectReference Include="..\Bio.BWA\Bio.BWA.csproj">
+      <Project>{37BC2989-F622-41D0-AE44-3FB03D9D3DF3}</Project>
+      <Name>Bio.BWA</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Variant\" />
+  </ItemGroup>
+</Project>

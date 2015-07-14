@@ -2,3 +2,10 @@
 *.exe
 *.dll
 *.mdb
+bwa
+*.so
+**/packages/*
+*.a
+*.userprefs
+**/bin/
+**/obj/

@@ -2,6 +2,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Linq;
 using System.IO;
+    
 using Bio.IO.SAM;
 using Bio.IO.BAM;
 using System.Collections;
@@ -60,7 +61,7 @@ namespace Bio.BWA.MEM
 		/// <returns>The sequence.</returns>
 		/// <param name="seq">Sequence to align</param>
 		/// <param name="addMetaDataInformat"> Add meta-data? Provides more information at a slight performance cost </param>
-		public unsafe SAMAlignedSequence AlignSequence(ISequence seq,bool addMetaDataInformation=true)
+		public unsafe SAMAlignedSequence AlignSequence(ISequence seq, bool addMetaDataInformation=true)
 		{
 			if (seq == null) {
 				throw new ArgumentNullException ("seq");
@@ -82,7 +83,7 @@ namespace Bio.BWA.MEM
 				int n_aligns = (int)ar.n;
 				//save memory location to free later
 				IntPtr initialMemLocation = ar.a;
-				for (int i=0; i<n_aligns; i++) {
+				for (int i=0; i < n_aligns; i++) {
 					mem_alnreg_t curAlign = *(mem_alnreg_t*)ar.a;
 					if(curAlign.secondary<0)//ignore secondary alignments
 					{
@@ -115,13 +116,14 @@ namespace Bio.BWA.MEM
 						//now let's make a new sequence
 						toReturn = new SAMAlignedSequence ();
 						//flag includes 0x100 for secondary alignment, and I believe that is the only one it could be at this point
-						toReturn.Flag = (SAMFlags)a.flag;
+                        toReturn.Flag = (SAMFlags)(a.flag  | (isReversed ? (int)SAMFlags.QueryOnReverseStrand : 0));
 						toReturn.MapQ = (int)mapq;
 						toReturn.CIGAR = cigarBuilder.ToString ();
 						toReturn.QName = seq.ID;
-						toReturn.QuerySequence = seq;
+                        toReturn.QuerySequence = isReversed ? seq.GetReverseComplementedSequence () : seq;
 						toReturn.RName = refSeqNames [a.rid];
 						toReturn.Pos = (int)a.pos;
+
 						if (addMetaDataInformation) {
 							//Edit distance
 							toReturn.Metadata ["NM"] = editDistance;
