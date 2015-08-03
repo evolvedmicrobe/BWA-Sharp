@@ -2,6 +2,7 @@ build/*
 Bio.BWA/packages/*
 Bio.BWA/Bio.BWA/obj/*
 Bio.BWA/TestBWA/obj/*
+Bio.BWA/Bio.BWA.userprefs
 *.o
 *.exe
 *.dll
