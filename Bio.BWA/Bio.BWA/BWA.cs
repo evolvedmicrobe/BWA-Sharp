@@ -13,17 +13,22 @@ namespace Bio.BWA.MEM
 	public class BWA : IDisposable
 	{
 		private IntPtr bwaidx; //bwaidx_t*
+
 		//TODO: Converrt to the actual structure after profiling to ensure blittable types, right now 
 		//the scoring matrix needs to be manually updated to after calls, so this should be wrapped.
 		private IntPtr opts;//mem_opt_t*
-		private bwaidx_t bwaidx_as_struct;
+		
+        private bwaidx_t bwaidx_as_struct;
 		bntseq_t refSeqs;
-		private string[] refSeqNames;
-		/// <summary>
+		
+        private string[] refSeqNames;
+		
+        /// <summary>
 		/// Suffixes of files that should be present if the file is indexed
 		/// </summary>
 		private string[] requiredFileSuffixes = new string[]{".amb",".ann",".bwt",".pac",".sa"};
-		/// <summary>
+		
+        /// <summary>
 		/// Initializes a new instance of the <see cref="Bio.BWA.MEM.BWA"/> class.  This class will requires
 		/// write permissions on the source directory of an index has not yet been made.
 		/// </summary>
@@ -48,7 +53,8 @@ namespace Bio.BWA.MEM
 				throw new BWAException("Could not load the BWA default options");
 			}
 		}
-		/// <summary>
+		
+        /// <summary>
 		/// Returns the best alignment for that sequence, with information about
 		/// other alignments in the meta-data under "NH" meta-tag tag, for number of other alignments.
 		/// 
@@ -73,7 +79,7 @@ namespace Bio.BWA.MEM
 				//get the alignments
 				//TODO: Who is responsible for cleaning out this memory in this ar variable???
 				//I think structs do not need to be freed, but best to check
-				mem_alnreg_v ar=mem_align1(opts,bwaidx_as_struct.bwt,
+				mem_alnreg_v ar=mem_align1(opts, bwaidx_as_struct.bwt,
 				                           bwaidx_as_struct.bns,
 				                           bwaidx_as_struct.pac,
 				                           data.Length,
@@ -112,9 +118,9 @@ namespace Bio.BWA.MEM
 						byte mapq=(byte) ((a.isRevAndMapQAndNM>>1)&0xFF);
 						//and last 23 are edit distance
 						uint editDistance=a.isRevAndMapQAndNM>>9;
-						//now let's make a new sequence
+						// now let's make a new sequence
 						toReturn = new SAMAlignedSequence ();
-						//flag includes 0x100 for secondary alignment, and I believe that is the only one it could be at this point
+						// flag includes 0x100 for secondary alignment, and I believe that is the only one it could be at this point
 						toReturn.Flag = (SAMFlags)a.flag;
 						toReturn.MapQ = (int)mapq;
 						toReturn.CIGAR = cigarBuilder.ToString ();

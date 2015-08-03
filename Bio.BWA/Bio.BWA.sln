@@ -7,17 +7,17 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestBWA", "TestBWA\TestBWA.
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		Debug|x86 = Debug|x86
-		Release|x86 = Release|x86
+		Debug|AnyCPU = Debug|AnyCPU
+		Release|AnyCPU = Release|AnyCPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{37BC2989-F622-41D0-AE44-3FB03D9D3DF3}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{37BC2989-F622-41D0-AE44-3FB03D9D3DF3}.Debug|x86.Build.0 = Debug|Any CPU
-		{37BC2989-F622-41D0-AE44-3FB03D9D3DF3}.Release|x86.ActiveCfg = Release|Any CPU
-		{37BC2989-F622-41D0-AE44-3FB03D9D3DF3}.Release|x86.Build.0 = Release|Any CPU
-		{911D6858-788E-4912-A0C6-8BBB64501AA7}.Debug|x86.ActiveCfg = Debug|x86
-		{911D6858-788E-4912-A0C6-8BBB64501AA7}.Debug|x86.Build.0 = Debug|x86
-		{911D6858-788E-4912-A0C6-8BBB64501AA7}.Release|x86.ActiveCfg = Release|x86
-		{911D6858-788E-4912-A0C6-8BBB64501AA7}.Release|x86.Build.0 = Release|x86
+		{37BC2989-F622-41D0-AE44-3FB03D9D3DF3}.Debug|AnyCPU.ActiveCfg = Debug|Any CPU
+		{37BC2989-F622-41D0-AE44-3FB03D9D3DF3}.Debug|AnyCPU.Build.0 = Debug|Any CPU
+		{37BC2989-F622-41D0-AE44-3FB03D9D3DF3}.Release|AnyCPU.ActiveCfg = Release|Any CPU
+		{37BC2989-F622-41D0-AE44-3FB03D9D3DF3}.Release|AnyCPU.Build.0 = Release|Any CPU
+		{911D6858-788E-4912-A0C6-8BBB64501AA7}.Debug|AnyCPU.ActiveCfg = Debug|Any CPU
+		{911D6858-788E-4912-A0C6-8BBB64501AA7}.Debug|AnyCPU.Build.0 = Debug|Any CPU
+		{911D6858-788E-4912-A0C6-8BBB64501AA7}.Release|AnyCPU.ActiveCfg = Release|Any CPU
+		{911D6858-788E-4912-A0C6-8BBB64501AA7}.Release|AnyCPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
