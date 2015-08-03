@@ -1,3 +1,7 @@
+build/*
+Bio.BWA/packages/*
+Bio.BWA/Bio.BWA/obj/*
+Bio.BWA/TestBWA/obj/*
 *.o
 *.exe
 *.dll

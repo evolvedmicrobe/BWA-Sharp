@@ -20,7 +20,4 @@ Global
 		{911D6858-788E-4912-A0C6-8BBB64501AA7}.Release|x86.ActiveCfg = Release|x86
 		{911D6858-788E-4912-A0C6-8BBB64501AA7}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
-	GlobalSection(MonoDevelopProperties) = preSolution
-		StartupItem = TestBWA\TestBWA.csproj
-	EndGlobalSection
 EndGlobal

@@ -7,7 +7,7 @@ namespace Bio.BWA.MEM
 	{
 		static void Main (string[] args)
 		{
-
+            
 			BWA bwa = new BWA ("/Users/ndelaney/bwa-0.7.5a/TestData/MT.fasta");
 			Sequence s = new Sequence (DnaAlphabet.Instance, "CGCATTCCTACTACTCAACTTAAACTCCAGCACCACGACCCTACTACTATCTCGCACCTGCTTTT");
 			bwa.AlignSequence (s);
