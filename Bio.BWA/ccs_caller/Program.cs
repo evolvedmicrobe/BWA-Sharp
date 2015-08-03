@@ -14,9 +14,9 @@ namespace ccs_caller
         public static void Main (string[] args)
         {
             var fnames = new List<st> () {
-                new st ("/Users/nigel/git/cafe-quality/NotTracked/CCS_Human/pulsewidth", "pulsewidth.csv"), 
-                new st (    "/Users/nigel/git/cafe-quality/NotTracked/CCS_Human/master", "master.csv"),
-                new st("/Users/nigel/git/cafe-quality/NotTracked/CCS_Human/mqv_deltag", "mqvdeltag.csv")
+               // new st ("/Users/nigel/git/cafe-quality/NotTracked/CCS_Human/pulsewidth", "pulsewidth.csv"), 
+                new st (    "/Users/nigel/git/cafe-quality/Invitae/CCS_Human/master", "master.csv"),
+               // new st("/Users/nigel/git/cafe-quality/NotTracked/CCS_Human/mqv_deltag", "mqvdeltag.csv")
             };
 
             foreach(var t in fnames) {
@@ -27,8 +27,8 @@ namespace ccs_caller
             var zmwInfo = LoadZMWInfo( direc);
 
             var fastq = new FastQParser ();
-                var fastqs = (new DirectoryInfo (direc)).GetFiles ().Where (z => z.Name.EndsWith ("1.ccs.fastq", StringComparison.Ordinal)).Select(p=>p.FullName);
-                var seq = fastqs.SelectMany( fq =>  fastq.Parse (fq).Select (s =>  {
+            var fastqs = (new DirectoryInfo (direc)).GetFiles ().Where (z => z.Name.EndsWith ("ccs.fastq", StringComparison.Ordinal)).Select(p=>p.FullName);
+            var seq = fastqs.SelectMany( fq =>  fastq.Parse (fq).Select (s =>  {
                     var r = s as QualitativeSequence;
                     var qid = r.ID;
                     var sp = qid.Split('/');
@@ -107,7 +107,7 @@ namespace ccs_caller
         
         public static Dictionary<string, Dictionary<int, ZMWInfo>> LoadZMWInfo(string dirName) {
             DirectoryInfo di = new DirectoryInfo (dirName);
-            var files = di.GetFiles ().Where (p => p.Name.EndsWith ("1.ccs.csv", StringComparison.Ordinal));
+            var files = di.GetFiles ().Where (p => p.Name.EndsWith ("ccs.csv", StringComparison.Ordinal));
             var toReturn = new Dictionary<string, Dictionary<int, ZMWInfo>> ();
             foreach (var f in files) {
                 var data = File.ReadAllLines (f.FullName).Skip (1).Select (k => new ZMWInfo (k));
