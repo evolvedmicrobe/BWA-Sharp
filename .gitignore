@@ -1,7 +1,10 @@
 build/*
 Bio.BWA/packages/*
+Bio.BWA/Bio.BWA/bin/*
 Bio.BWA/Bio.BWA/obj/*
 Bio.BWA/TestBWA/obj/*
+Bio.BWA/TestBWA/bin/*
+Bio.BWA/ccs_caller/*
 Bio.BWA/Bio.BWA.userprefs
 *.o
 *.exe

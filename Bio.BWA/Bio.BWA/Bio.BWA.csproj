@@ -26,7 +26,6 @@
     </CustomCommands>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>full</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release</OutputPath>
     <WarningLevel>4</WarningLevel>
@@ -39,7 +38,13 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Core" />
     <Reference Include="Bio.Core">
-      <HintPath>..\packages\NETBioCore.PCL.2.0.150722\lib\net45\Bio.Core.dll</HintPath>
+      <HintPath>..\packages\NetBioCore.PCL.2.0.150722\lib\net45\Bio.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="Bio.Platform.Helpers">
+      <HintPath>..\packages\NetBioCore.PCL.2.0.150722\lib\net45\Bio.Platform.Helpers.dll</HintPath>
+    </Reference>
+    <Reference Include="Bio.Desktop">
+      <HintPath>..\packages\NetBioCore.PCL.2.0.150722\lib\net45\Bio.Desktop.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -47,11 +52,26 @@
     <Compile Include="BWA.cs" />
     <Compile Include="BWAException.cs" />
     <Compile Include="BWA_Types.cs" />
+    <Compile Include="BWAPairwiseAligner.cs" />
+    <Compile Include="BWAPairwiseAlignment.cs" />
+    <Compile Include="RegionInformation\RegionTree.cs" />
+    <Compile Include="RegionInformation\Region.cs" />
+    <Compile Include="FastaSubSequenceProvider.cs" />
+    <Compile Include="SmallFastaSubSequenceProvider.cs" />
+    <Compile Include="LargeFastaSubSequenceProvider.cs" />
+    <Compile Include="CigarHelpers\CigarOperations.cs" />
+    <Compile Include="CigarHelpers\CigarUtils.cs" />
+    <Compile Include="RemoveLater\BPandQV.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
     <None Include="..\..\bwa_src\libbwacsharp.so">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="RegionInformation\" />
+    <Folder Include="CigarHelpers\" />
+    <Folder Include="RemoveLater\" />
   </ItemGroup>
 </Project>

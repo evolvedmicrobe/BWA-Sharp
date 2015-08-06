@@ -7,6 +7,7 @@ using Bio.IO.BAM;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
+using Bio.Extensions;
 
 namespace Bio.BWA.MEM
 {
@@ -14,11 +15,12 @@ namespace Bio.BWA.MEM
 	{
 		private IntPtr bwaidx; //bwaidx_t*
 
-		//TODO: Converrt to the actual structure after profiling to ensure blittable types, right now 
+		//TODO: Convert to the actual structure after profiling to ensure blittable types, right now 
 		//the scoring matrix needs to be manually updated to after calls, so this should be wrapped.
 		private IntPtr opts;//mem_opt_t*
 		
         private bwaidx_t bwaidx_as_struct;
+
 		bntseq_t refSeqs;
 		
         private string[] refSeqNames;
@@ -66,7 +68,7 @@ namespace Bio.BWA.MEM
 		/// <returns>The sequence.</returns>
 		/// <param name="seq">Sequence to align</param>
 		/// <param name="addMetaDataInformat"> Add meta-data? Provides more information at a slight performance cost </param>
-		public unsafe SAMAlignedSequence AlignSequence(ISequence seq,bool addMetaDataInformation=true)
+		public unsafe SAMAlignedSequence AlignSequence(ISequence seq, bool addMetaDataInformation=true)
 		{
 			if (seq == null) {
 				throw new ArgumentNullException ("seq");
@@ -113,6 +115,10 @@ namespace Bio.BWA.MEM
 						mem_nd_free_uint (originalCigarLocation);
 						//first bit has the reversed or not
 						bool isReversed = (a.isRevAndMapQAndNM & 1) == 0 ? false : true;
+                        if (isReversed) {
+                            seq = seq.GetReverseComplementedSequence ();
+                            seq.Metadata.Add (SequenceExtensions.ReversedSequenceMetadataKey, true); 
+                        }
 						//is_rev:1, mapq:8, NM:23;
 						//next 8 are the mapping quality
 						byte mapq=(byte) ((a.isRevAndMapQAndNM>>1)&0xFF);
@@ -121,7 +127,7 @@ namespace Bio.BWA.MEM
 						// now let's make a new sequence
 						toReturn = new SAMAlignedSequence ();
 						// flag includes 0x100 for secondary alignment, and I believe that is the only one it could be at this point
-						toReturn.Flag = (SAMFlags)a.flag;
+                        toReturn.Flag = (SAMFlags) (a.flag | (isReversed ? (int)SAMFlags.QueryOnReverseStrand : 0)) ;
 						toReturn.MapQ = (int)mapq;
 						toReturn.CIGAR = cigarBuilder.ToString ();
 						toReturn.QName = seq.ID;
@@ -136,7 +142,7 @@ namespace Bio.BWA.MEM
 							//other alignments found
 							toReturn.Metadata ["NH"] = n_aligns;
 							//get second best score here as well
-							toReturn.Metadata ["XS"] = a.sub.ToString ();
+							toReturn.Metadata ["XS"] = a.sub;
 						}
 					}
 					ar.a += sizeof(mem_alnreg_t);
@@ -149,17 +155,15 @@ namespace Bio.BWA.MEM
 		private unsafe void loadIndex(string fname)
 		{
 			//see if we need the index, and load if so
-			DirectoryInfo di= System.IO.Directory.GetParent(fname);
-			var presentNames= di.GetFiles().Select(x=>x.FullName).ToList();
-			presentNames.Select (x => {Console.WriteLine (x); return 0;});
-			var filesNotPresent = requiredFileSuffixes.Select (x => fname + x).Any (x => !presentNames.Contains (x));
+			var filesNotPresent = requiredFileSuffixes.Any (x => !File.Exists (fname + x));
 			if (filesNotPresent) {
-				int res=bwa_index (2, new string[] {"index",fname});
+            	int res=bwa_index (2, new string[] {"index", fname});
 				if (res != 0) {
 					throw new BWAException ("Could not index fasta file: " + fname);
 				}
 			}
-			//load the index
+
+            //load the index
 			bwaidx = _loadIndex (fname);
 			if (bwaidx == IntPtr.Zero) {
 				throw new BWAException("The BWA files indexed genome failed to load.  Ensure it is in the correct place" +
