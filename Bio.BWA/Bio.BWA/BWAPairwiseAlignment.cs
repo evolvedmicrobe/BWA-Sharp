@@ -82,7 +82,7 @@ namespace Bio.BWA
 
         public ISequence FirstSequence {
             get {
-                throw new NotImplementedException ();
+                return null;
                 }
         }
 
