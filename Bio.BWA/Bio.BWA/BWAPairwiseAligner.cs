@@ -94,7 +94,7 @@ namespace Bio.BWA
 
             int curRef = 0;
             int curQuery = 0; //location on query
-            var qseq = aln.QuerySequence as IQualitativeSequence;
+            var qseq = aln.QuerySequence as QualitativeSequence;
             bool isQual = true;
             if (qseq == null) {
                 isQual = false;
@@ -132,7 +132,7 @@ namespace Bio.BWA
                     }
                     if (addQuery) {
                         var bp = (byte)qstr [curQuery];
-                        var qv = isQual ? qseq.GetEncodedQualityScore (curQuery) : (byte)0;
+                        var qv = isQual ? (byte) qseq.GetQualityScore(curQuery) : (byte)0;
                         q.Add (new BPandQV (bp, qv));
                         curQuery++;
                     } else {
