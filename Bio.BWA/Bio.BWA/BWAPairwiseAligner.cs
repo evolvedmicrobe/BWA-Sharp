@@ -86,6 +86,7 @@ namespace Bio.BWA
             }
 
             var elements = CigarUtils.GetCigarElements (aln.CIGAR);
+            elements = CigarUtils.FilterLeadingAndTrailingInsertions (elements);
 
             int length = CigarUtils.GetAlignmentLengthAfterClipping (elements);
             var q = new List<BPandQV>(length);

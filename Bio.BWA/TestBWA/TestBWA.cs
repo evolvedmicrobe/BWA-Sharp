@@ -184,6 +184,39 @@ namespace TestBWA
                 Assert.AreEqual(refseq, baln.AlignedRefSeq);
             }   
         }
+
+        [Test]
+        [Category("BWA")]
+        public static void Test6S1I105M1I32MCigar() {
+            /* This read comes back with a cigar having both an insertion and a match, this combines them here so 6S1I -> 7S */
+            var seq =  "GAAGCTACTAGTCCTCAGCAAGCTTGTGCGTCCGCTCAAAAAGCTGCGCTCGAAAAAAAAAAGTCGTCTGTCTAGATGATGTGCCCCCCCCCCGTATATGTATCCCCCAGTGTATGAGCATTCTAGAGGATCCCCGGGATGCTCT";
+            var qual = "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~3~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~";
+            var seqq = new QualitativeSequence (DnaAlphabet.Instance, FastQFormatType.Sanger, 
+                seq.Select (x => (byte)x).ToArray (),
+                qual.Select (p => (int)p).ToArray (),
+                false);
+            var fname = "../../../../TestData/References.fna";
+            using (var bwa = new BWAPairwiseAligner (fname, false)) {
+                var aln = bwa.AlignRead (seqq);
+                var baln = aln as BWAPairwiseAlignment;
+                Assert.AreEqual (0, baln.AlignedSAMSequence.Pos);
+                // Currently fixed when generating the alignment, but not the read.
+                Assert.AreEqual ("6S1I105M1I32M", baln.AlignedSAMSequence.CIGAR);
+                Assert.AreEqual (aln.PairwiseAlignedSequences.Count, 1);
+                Assert.AreEqual (Bio.IO.SAM.SAMFlags.QueryOnReverseStrand, baln.AlignedSAMSequence.Flag);
+                var refseq = aln.PairwiseAlignedSequences[0].FirstSequence;
+                var queryseq = aln.PairwiseAlignedSequences [0].SecondSequence;
+                var exp_seq = "CCCGGGGATCCTCTAGAATGCTCATACACTGGGGGATACATATACGGGGGGGGGGCACATCATCTAGACAGACGACTTTTTTTTTTCGAGCGCAGCTTTTTGAGCGGACGCACAAGCTTGCTGAGGACTAGTAGCTTC";
+                Assert.AreEqual (exp_seq, 
+                    queryseq.ConvertToString ());
+                exp_seq = "CCCGGGGATCCTCTAGAATGCTCATACACTGGGGGATACATATACGGGGGGGGGGCACATCATCTAGACAGACGACTTTTTTTTTTCGAGCGCAGCTTTTTGAGC-GACGCACAAGCTTGCTGAGGACTAGTAGCTTC";
+
+                Assert.AreEqual (exp_seq, 
+                    refseq.ConvertToString ());
+                Assert.AreEqual(queryseq, baln.AlignedQuerySeq);
+                Assert.AreEqual(refseq, baln.AlignedRefSeq);
+            }   
+        }
     }
 }
 
