@@ -90,10 +90,20 @@ namespace Bio.BWA.MEM
 				int n_aligns = (int)ar.n;
 				//save memory location to free later
 				IntPtr initialMemLocation = ar.a;
+                int bestScore = int.MinValue;
 				for (int i=0; i<n_aligns; i++) {
 					mem_alnreg_t curAlign = *(mem_alnreg_t*)ar.a;
-					if(curAlign.secondary<0)//ignore secondary alignments
+                    /* Ignore secondary alignments, but note that the
+                     * can be more than one primary alignment.  The criteria is that an alignment is
+                     * only secondary if it overlaps with the other alignments query start/end by 50%
+                     * (or whatever the mask level option is set to).
+                     * 
+                     * As a result, I also need to keep track of what the highest scoring PRIMARY alignment is
+                     */                      
+					if(curAlign.secondary < 0  && curAlign.score > bestScore)
 					{
+                        bestScore = curAlign.score;
+                        ISequence querySeq = seq;
 						//get forward strand positiion and cigar
 						//a = mem_reg2aln(opt, idx->bns, idx->pac, ks->seq.l, ks->seq.s, &ar.a[i]); // get forward-strand position and CIGAR
 						mem_aln_t a = mem_reg2aln (opts, bwaidx_as_struct.bns,bwaidx_as_struct.pac, data.Length, (IntPtr)pdata, ar.a);
@@ -116,8 +126,8 @@ namespace Bio.BWA.MEM
 						//first bit has the reversed or not
 						bool isReversed = (a.isRevAndMapQAndNM & 1) == 0 ? false : true;
                         if (isReversed) {
-                            seq = seq.GetReverseComplementedSequence ();
-                            seq.Metadata.Add (SequenceExtensions.ReversedSequenceMetadataKey, true); 
+                            querySeq = querySeq.GetReverseComplementedSequence ();
+                            querySeq.Metadata.Add (SequenceExtensions.ReversedSequenceMetadataKey, true); 
                         }
 						//is_rev:1, mapq:8, NM:23;
 						//next 8 are the mapping quality
@@ -131,7 +141,7 @@ namespace Bio.BWA.MEM
 						toReturn.MapQ = (int)mapq;
 						toReturn.CIGAR = cigarBuilder.ToString ();
 						toReturn.QName = seq.ID;
-						toReturn.QuerySequence = seq;
+                        toReturn.QuerySequence = querySeq;
 						toReturn.RName = refSeqNames [a.rid];
 						toReturn.Pos = (int)a.pos;
 						if (addMetaDataInformation) {

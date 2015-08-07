@@ -7,6 +7,7 @@ using Bio.BWA.MEM;
 using Bio;
 using Bio.Extensions;
 using Bio.BWA;
+using System.Linq;
 
 namespace TestBWA
 {
@@ -122,8 +123,66 @@ namespace TestBWA
                 Assert.AreEqual (5927, baln.AlignedSAMSequence.Pos);
                 Assert.AreEqual(queryseq, baln.AlignedQuerySeq);
                 Assert.AreEqual(refseq, baln.AlignedRefSeq);
-            }
-            
+            }            
+        }
+
+        // Can revitalize this later, is for a secondary alignment, so doesn't apply when we only return the best
+        #if FALSE
+        [Test]
+        [Category("BWA")]
+        public static void TestCCSReads() {
+            var seq =  "GAAGCTACTAGTCCTCAGCAAGCTTGTGCGTCGCTCAAAAAGCTGCGCTCGAAAAAAAAAAGTCGTCTGTCTAGATGATGTGCCCCCCCCCCGTATATGTATCCCCCAGTGTATGAGCATTCTAGAGGATCCCCGGGTCTCTCTCAAGAATGCTCATACACTGGGGGATACATATACGGGGGGGGGGCACATCATCTAGACAGACGACTTTTTTTTTCGAGCGCAGCTTTTTGAGCGACGCACAAGCTTGCTGAGGACTAGTAGCTTC";
+            var qual = "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~3~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~E~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~J~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~";
+            var seqq = new QualitativeSequence (DnaAlphabet.Instance, FastQFormatType.Sanger, 
+                           seq.Select (x => (byte)x).ToArray (),
+                           qual.Select (p => (int)p).ToArray (),
+                false);
+            var fname = "../../../../TestData/References.fna";
+            using (var bwa = new BWAPairwiseAligner (fname, false)) {
+                var aln = bwa.AlignRead (seqq);
+                var baln = aln as BWAPairwiseAlignment;
+                Assert.AreEqual (14, baln.AlignedSAMSequence.Pos);
+                Assert.AreEqual ("146S62M1D60M", baln.AlignedSAMSequence.CIGAR);
+                Assert.AreEqual (aln.PairwiseAlignedSequences.Count, 1);
+                var refseq = aln.PairwiseAlignedSequences[0].FirstSequence;
+                var queryseq = aln.PairwiseAlignedSequences [0].SecondSequence;
+                Assert.AreEqual ('-', queryseq [62]);
+                Assert.AreEqual ("AGAATGCTCATACACTGGGGGATACATATACGGGGGGGGGGCACATCATCTAGACAGACGAC-TTTTTTTTTCGAGCGCAGCTTTTTGAGCGACGCACAAGCTTGCTGAGGACTAGTAGCTTC", 
+                                    queryseq.ConvertToString ());
+                Assert.AreEqual ("AGAATGCTCATACACTGGGGGATACATATACGGGGGGGGGGCACATCATCTAGACAGACGACTTTTTTTTTTCGAGCGCAGCTTTTTGAGCGACGCACAAGCTTGCTGAGGACTAGTAGCTTC", 
+                    refseq.ConvertToString ());
+                Assert.AreEqual(queryseq, baln.AlignedQuerySeq);
+                Assert.AreEqual(refseq, baln.AlignedRefSeq);
+            }   
+        }
+        #endif
+
+        [Test]
+        [Category("BWA")]
+        public static void TestCCSReads() {
+            var seq =  "GAAGCTACTAGTCCTCAGCAAGCTTGTGCGTCGCTCAAAAAGCTGCGCTCGAAAAAAAAAAGTCGTCTGTCTAGATGATGTGCCCCCCCCCCGTATATGTATCCCCCAGTGTATGAGCATTCTAGAGGATCCCCGGGTCTCTCTCAAGAATGCTCATACACTGGGGGATACATATACGGGGGGGGGGCACATCATCTAGACAGACGACTTTTTTTTTCGAGCGCAGCTTTTTGAGCGACGCACAAGCTTGCTGAGGACTAGTAGCTTC";
+            var qual = "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~3~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~E~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~J~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~";
+            var seqq = new QualitativeSequence (DnaAlphabet.Instance, FastQFormatType.Sanger, 
+                seq.Select (x => (byte)x).ToArray (),
+                qual.Select (p => (int)p).ToArray (),
+                false);
+            var fname = "../../../../TestData/References.fna";
+            using (var bwa = new BWAPairwiseAligner (fname, false)) {
+                var aln = bwa.AlignRead (seqq);
+                var baln = aln as BWAPairwiseAlignment;
+                Assert.AreEqual (1, baln.AlignedSAMSequence.Pos);
+                Assert.AreEqual ("132S136M", baln.AlignedSAMSequence.CIGAR);
+                Assert.AreEqual (aln.PairwiseAlignedSequences.Count, 1);
+                var refseq = aln.PairwiseAlignedSequences[0].FirstSequence;
+                var queryseq = aln.PairwiseAlignedSequences [0].SecondSequence;
+                var exp_seq = "CCGGGGATCCTCTAGAATGCTCATACACTGGGGGATACATATACGGGGGGGGGGCACATCATCTAGACAGACGACTTTTTTTTTTCGAGCGCAGCTTTTTGAGCGACGCACAAGCTTGCTGAGGACTAGTAGCTTC";
+                Assert.AreEqual (exp_seq, 
+                    queryseq.ConvertToString ());
+                Assert.AreEqual (exp_seq, 
+                    refseq.ConvertToString ());
+                Assert.AreEqual(queryseq, baln.AlignedQuerySeq);
+                Assert.AreEqual(refseq, baln.AlignedRefSeq);
+            }   
         }
     }
 }
