@@ -40,8 +40,14 @@ namespace Bio.IO.FastA
                     "\nNote: samtools faidx can be used to generate an index file.");
             }
             index = File.ReadLines (indexName).Select (x => new FastaIndexLine (x)).ToDictionary( z=>z.Name, z=>z);
-            mmf = MemoryMappedFile.CreateFromFile(fname, FileMode.Open);
-
+            try {
+                mmf = MemoryMappedFile.CreateFromFile(fname, FileMode.Open);
+            }
+            catch(Exception thrown) {
+                throw new BWA.MEM.BWAException ("Could not open memory mapped file to read fasta.  Error was: \n" +
+                thrown.Message + " with stack trace " + thrown.StackTrace +
+                "\n\n\nNote that on some operating systems you may need to chmod 777 the file in order to have sufficient permissions to do this.");
+            }
 
         }
         public override byte[] GetReferenceSection(string refName, long start, long end) {
