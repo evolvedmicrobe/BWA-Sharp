@@ -33,8 +33,11 @@ namespace Bio.IO.FastA
             if (indexName == null) {
                 indexName = fname + ".fai";
             }
-            if (!File.Exists (fname) || !File.Exists(fname)) {
-                throw new FileNotFoundException ("Could not find fasta index file: " + fname);
+            if (!File.Exists (fname)) {
+                throw new FileNotFoundException ("Could not find FASTA file: " + fname);
+            } else if(!File.Exists(indexName)) {
+                throw new FileNotFoundException ("Could not find fasta index file: " + fname +
+                    "\nNote: samtools faidx can be used to generate an index file.");
             }
             index = File.ReadLines (indexName).Select (x => new FastaIndexLine (x)).ToDictionary( z=>z.Name, z=>z);
             mmf = MemoryMappedFile.CreateFromFile(fname, FileMode.Open);
