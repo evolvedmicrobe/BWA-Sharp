@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/evolvedmicrobe/BWA-Sharp.svg)](https://travis-ci.org/evolvedmicrobe/BWA-Sharp)
+
 ###Description
 
 This library is a C# wrapper around the bwa mem program.  It allows C# (or python or F#) code to call BWA from obtain fully typed SAMAlignment object compatible with .NET Bio classes.  It differs from previous wrappers around this program as it does not require the user to run the "index" command prior to calling this program, and also does not do the interop through a C++ intermediate.  
