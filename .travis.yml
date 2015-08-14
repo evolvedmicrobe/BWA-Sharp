@@ -1,0 +1,17 @@
+language: csharp
+solution: Bio.BWA/Bio.BWA.sln
+env:
+    MONO_IOMAP=all
+install:
+  - nuget restore Bio.BWA/Bio.BWA.sln
+  - nuget install -Prerelease NUnit.Console -Version 3.0.0-beta-3 -OutputDirectory testrunner  
+script:
+  - cd bwa_src
+  - make
+  - cd ..
+  - xbuild /p:Configuration=Release Bio.BWA/Bio.BWA.sln
+  - mkdir TestDir
+  - cp ./Bio.BWA/TestBWA/bin/Release/* ./TestDir/
+  - cp bwa_src/libbwacsharp.so ./Bio.BWA/TestBWA/bin/Release/
+  - ls -lR ./Bio.BWA/TestBWA/bin/Release/
+  - mono ./testrunner/NUnit.Console.3.0.0-beta-3/tools/nunit-console.exe ./Bio.BWA/TestBWA/bin/Release/TestBWA.dll
