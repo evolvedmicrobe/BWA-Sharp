@@ -14,7 +14,10 @@ namespace TestBWA
     [TestFixture]
     public static class TestBWA
     {
-        const string fasta_name = "../../../../TestData/MT.fasta";
+        static string base_dir = "../../../..";
+
+        static string fasta_name = Path.Combine(base_dir, "TestData/MT.fasta");
+        static string screen_refs = Path.Combine(base_dir, "TestData/References.fna");
 
         [Test]
         [Category("BWA")]
@@ -166,8 +169,35 @@ namespace TestBWA
                 seq.Select (x => (byte)x).ToArray (),
                 qual.Select (p => (int)p).ToArray (),
                 false);
-            var fname = "../../../../TestData/References.fna";
-            using (var bwa = new BWAPairwiseAligner (fname, false)) {
+           
+            using (var bwa = new BWAPairwiseAligner (screen_refs, false)) {
+                var aln = bwa.AlignRead (seqq);
+                var baln = aln as BWAPairwiseAlignment;
+                Assert.AreEqual (1, baln.AlignedSAMSequence.Pos);
+                Assert.AreEqual ("132S136M", baln.AlignedSAMSequence.CIGAR);
+                Assert.AreEqual (aln.PairwiseAlignedSequences.Count, 1);
+                var refseq = aln.PairwiseAlignedSequences[0].FirstSequence;
+                var queryseq = aln.PairwiseAlignedSequences [0].SecondSequence;
+                var exp_seq = "CCGGGGATCCTCTAGAATGCTCATACACTGGGGGATACATATACGGGGGGGGGGCACATCATCTAGACAGACGACTTTTTTTTTTCGAGCGCAGCTTTTTGAGCGACGCACAAGCTTGCTGAGGACTAGTAGCTTC";
+                Assert.AreEqual (exp_seq, 
+                    queryseq.ConvertToString ());
+                Assert.AreEqual (exp_seq, 
+                    refseq.ConvertToString ());
+                Assert.AreEqual(queryseq, baln.AlignedQuerySeq);
+                Assert.AreEqual(refseq, baln.AlignedRefSeq);
+            }   
+        }
+
+        [Test]
+        [Category("BWA")]
+        public static void TestQVsAreFaithful() {
+            var seq =  "GAAGCTACTAGTCCTCAGCAAGCTTGTGCGTCGCTCAAAAAGCTGCGCTCGAAAAAAAAAAGTCGTCTGTCTAGATGATGTGCCCCCCCCCCGTATATGTATCCCCCAGTGTATGAGCATTCTAGAGGATCCCCGGGTCTCTCTCAAGAATGCTCATACACTGGGGGATACATATACGGGGGGGGGGCACATCATCTAGACAGACGACTTTTTTTTTCGAGCGCAGCTTTTTGAGCGACGCACAAGCTTGCTGAGGACTAGTAGCTTC";
+            var qual = "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~3~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~E~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~J~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~";
+            var seqq = new QualitativeSequence (DnaAlphabet.Instance, FastQFormatType.Sanger, 
+                seq.Select (x => (byte)x).ToArray (),
+                qual.Select (p => (int)p).ToArray (),
+                false);
+            using (var bwa = new BWAPairwiseAligner (screen_refs, false)) {
                 var aln = bwa.AlignRead (seqq);
                 var baln = aln as BWAPairwiseAlignment;
                 Assert.AreEqual (1, baln.AlignedSAMSequence.Pos);
@@ -195,8 +225,7 @@ namespace TestBWA
                 seq.Select (x => (byte)x).ToArray (),
                 qual.Select (p => (int)p).ToArray (),
                 false);
-            var fname = "../../../../TestData/References.fna";
-            using (var bwa = new BWAPairwiseAligner (fname, false)) {
+            using (var bwa = new BWAPairwiseAligner (screen_refs, false)) {
                 var aln = bwa.AlignRead (seqq);
                 var baln = aln as BWAPairwiseAlignment;
                 Assert.AreEqual (0, baln.AlignedSAMSequence.Pos);
