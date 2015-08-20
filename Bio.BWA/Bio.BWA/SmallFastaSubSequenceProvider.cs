@@ -18,7 +18,7 @@ namespace Bio.BWA
             refData = new Dictionary<string, byte[]> ();
             FastAParser fp = new FastAParser ();
             foreach (var seq in fp.Parse (fileName)) {
-                var id = seq.ID;
+                var id = seq.ID.Split(' ')[0];
                 var seqarr = seq.ToArray ();
                 refData [id] = seqarr;
                // var sequence = seq.ConvertToString ();
