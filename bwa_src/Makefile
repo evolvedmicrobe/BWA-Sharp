@@ -1,6 +1,6 @@
 CC=			gcc
 #CC=			clang --analyze
-CFLAGS=		-g -Wall -Wno-unused-function -O2
+CFLAGS=		-g -Wall -Wno-unused-function -O2 -fPIC
 WRAP_MALLOC=-DUSE_MALLOC_WRAPPERS
 AR=			ar
 DFLAGS=		-DHAVE_PTHREAD $(WRAP_MALLOC)
@@ -9,7 +9,7 @@ AOBJS=		QSufSort.o bwt_gen.o bwashm.o bwase.o bwaseqio.o bwtgap.o bwtaln.o bamli
 			is.o bwtindex.o bwape.o kopen.o pemerge.o maxk.o \
 			bwtsw2_core.o bwtsw2_main.o bwtsw2_aux.o bwt_lite.o \
 			bwtsw2_chain.o fastmap.o bwtsw2_pair.o
-PROG=		bwa
+PROG=		csharplib
 INCLUDES=	
 LIBS=		-lm -lz -lpthread
 SUBDIRS=	.
@@ -27,6 +27,13 @@ all:$(PROG)
 
 bwa:libbwa.a $(AOBJS) main.o
 		$(CC) $(CFLAGS) $(DFLAGS) $(AOBJS) main.o -o $@ -L. -lbwa $(LIBS)
+
+csharplib:libbwa.a $(LOBJS) $(AOBJS) main.o
+		$(CC) $(CFLAGS) -shared $(DFLAGS) -o libbwacsharp.so main.o $(AOBJS) $(LOBJS) -L. -lbwa  $(LIBS) 
+
+csharplib32:libbwa.a $(LOBJS) $(AOBJS) main.o
+		$(CC) $(CFLAGS) -m32 -shared $(DFLAGS) -o libbwacsharp.so main.o $(AOBJS) $(LOBJS) -L. -lbwa  $(LIBS) 
+
 
 bwamem-lite:libbwa.a example.o
 		$(CC) $(CFLAGS) $(DFLAGS) example.o -o $@ -L. -lbwa $(LIBS)
