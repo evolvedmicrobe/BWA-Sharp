@@ -173,12 +173,12 @@ namespace TestBWA
             using (var bwa = new BWAPairwiseAligner (screen_refs, false)) {
                 var aln = bwa.AlignRead (seqq);
                 var baln = aln as BWAPairwiseAlignment;
-                Assert.AreEqual (1, baln.AlignedSAMSequence.Pos);
-                Assert.AreEqual ("132S136M", baln.AlignedSAMSequence.CIGAR);
+                Assert.AreEqual (0, baln.AlignedSAMSequence.Pos);
+                Assert.AreEqual ("131S137M", baln.AlignedSAMSequence.CIGAR);
                 Assert.AreEqual (aln.PairwiseAlignedSequences.Count, 1);
                 var refseq = aln.PairwiseAlignedSequences[0].FirstSequence;
                 var queryseq = aln.PairwiseAlignedSequences [0].SecondSequence;
-                var exp_seq = "CCGGGGATCCTCTAGAATGCTCATACACTGGGGGATACATATACGGGGGGGGGGCACATCATCTAGACAGACGACTTTTTTTTTTCGAGCGCAGCTTTTTGAGCGACGCACAAGCTTGCTGAGGACTAGTAGCTTC";
+                var exp_seq = "CCCGGGGATCCTCTAGAATGCTCATACACTGGGGGATACATATACGGGGGGGGGGCACATCATCTAGACAGACGACTTTTTTTTTTCGAGCGCAGCTTTTTGAGCGACGCACAAGCTTGCTGAGGACTAGTAGCTTC";
                 Assert.AreEqual (exp_seq, 
                     queryseq.ConvertToString ());
                 Assert.AreEqual (exp_seq, 
@@ -200,12 +200,48 @@ namespace TestBWA
             using (var bwa = new BWAPairwiseAligner (screen_refs, false)) {
                 var aln = bwa.AlignRead (seqq);
                 var baln = aln as BWAPairwiseAlignment;
-                Assert.AreEqual (1, baln.AlignedSAMSequence.Pos);
-                Assert.AreEqual ("132S136M", baln.AlignedSAMSequence.CIGAR);
+                Assert.AreEqual (0, baln.AlignedSAMSequence.Pos);
+                Assert.AreEqual ("131S137M", baln.AlignedSAMSequence.CIGAR);
                 Assert.AreEqual (aln.PairwiseAlignedSequences.Count, 1);
                 var refseq = aln.PairwiseAlignedSequences[0].FirstSequence;
                 var queryseq = aln.PairwiseAlignedSequences [0].SecondSequence;
-                var exp_seq = "CCGGGGATCCTCTAGAATGCTCATACACTGGGGGATACATATACGGGGGGGGGGCACATCATCTAGACAGACGACTTTTTTTTTTCGAGCGCAGCTTTTTGAGCGACGCACAAGCTTGCTGAGGACTAGTAGCTTC";
+                var exp_seq = "CCCGGGGATCCTCTAGAATGCTCATACACTGGGGGATACATATACGGGGGGGGGGCACATCATCTAGACAGACGACTTTTTTTTTTCGAGCGCAGCTTTTTGAGCGACGCACAAGCTTGCTGAGGACTAGTAGCTTC";
+                Assert.AreEqual (exp_seq, 
+                    queryseq.ConvertToString ());
+                Assert.AreEqual (exp_seq, 
+                    refseq.ConvertToString ());
+                Assert.AreEqual(queryseq, baln.AlignedQuerySeq);
+                Assert.AreEqual(refseq, baln.AlignedRefSeq);
+            }   
+        }
+
+        //This was broken in the old BWA MEM
+        [Test]
+        [Category("BWA")]
+        public static void TestCCSReadWithMismatchAtEnd() {
+            var seq =  "CTGGCAACTAATTCAGTCCAGTAAATATCCTCAATAGGGAATAATATATGCTTTCCATTCCATCGGGAAAAAGTTTTGTTCAACACACCAAGCTCAATCAACTCACTAATGTATGGGAATTGTTTTGATGTAACCACATACTTCCTGCCTTCATTAAGGGCTGCGCACAAAACCATAGATTGCTCTTCTGTAAGGTTTTGAATTACTGATCGCACTTTATCGTTTTGCATCTTAATGCGTTTTCTTAGCTTAAATCGCTTATATCTGGCGCTGGCAATAGCTGATAATCGATGCACATTAATTGCTAGCGAAAATGCAAGAGCAAAGACGAAAACATGCCACACATGAGGAATACCGATTCTCTCATTAACATATTCAGGCCAGTTATCTGGGCTTAAAAGCAGAAGTCCAACCCAGATAACGATCATATACATGGTTCTCTCCAGAGGTTCATTACTGAACACTCGTCCGAGAATAACGAGTGGATCCATTTCTATACTCATCAAACTGTAGGGGTTGTAATAGTTTATCCGATTTCTCGCTGTAGGGGTACACGAGAACCACCGAGCCTGATGTGGTTAAAAGACAGGCACAATCTTTACTACCGCAATCCACTATTTAAGGTGATATATGGAAGAAG";
+            var qual = "KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK@KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK";
+            var seqq = new QualitativeSequence (DnaAlphabet.Instance, FastQFormatType.Sanger, 
+                seq.Select (x => (byte)x).ToArray (),
+                qual.Select (p => (int)p).ToArray (),
+                false);
+
+            using (var bwa = new BWA (screen_refs)) {
+                var aln = bwa.AlignSequence (seqq);
+                Assert.AreEqual (34347, aln.Pos);
+                Assert.AreEqual ("640M", aln.CIGAR);
+                Assert.AreEqual(0, aln.Metadata["NM"]);
+            }
+
+            using (var bwa = new BWAPairwiseAligner (screen_refs)) {
+                var aln = bwa.AlignRead (seqq);
+                var baln = aln as BWAPairwiseAlignment;
+                // Assert.AreEqual (34348, baln.AlignedSAMSequence.Pos);
+                Assert.AreEqual ("640M", baln.AlignedSAMSequence.CIGAR);
+                Assert.AreEqual (aln.PairwiseAlignedSequences.Count, 1);
+                var refseq = aln.PairwiseAlignedSequences[0].FirstSequence;
+                var queryseq = aln.PairwiseAlignedSequences [0].SecondSequence;
+                var exp_seq = "CTTCTTCCATATATCACCTTAAATAGTGGATTGCGGTAGTAAAGATTGTGCCTGTCTTTTAACCACATCAGGCTCGGTGGTTCTCGTGTACCCCTACAGCGAGAAATCGGATAAACTATTACAACCCCTACAGTTTGATGAGTATAGAAATGGATCCACTCGTTATTCTCGGACGAGTGTTCAGTAATGAACCTCTGGAGAGAACCATGTATATGATCGTTATCTGGGTTGGACTTCTGCTTTTAAGCCCAGATAACTGGCCTGAATATGTTAATGAGAGAATCGGTATTCCTCATGTGTGGCATGTTTTCGTCTTTGCTCTTGCATTTTCGCTAGCAATTAATGTGCATCGATTATCAGCTATTGCCAGCGCCAGATATAAGCGATTTAAGCTAAGAAAACGCATTAAGATGCAAAACGATAAAGTGCGATCAGTAATTCAAAACCTTACAGAAGAGCAATCTATGGTTTTGTGCGCAGCCCTTAATGAAGGCAGGAAGTATGTGGTTACATCAAAACAATTCCCATACATTAGTGAGTTGATTGAGCTTGGTGTGTTGAACAAAACTTTTTCCCGATGGAATGGAAAGCATATATTATTCCCTATTGAGGATATTTACTGGACTGAATTAGTTGCCAG";
                 Assert.AreEqual (exp_seq, 
                     queryseq.ConvertToString ());
                 Assert.AreEqual (exp_seq, 
@@ -230,7 +266,7 @@ namespace TestBWA
                 var baln = aln as BWAPairwiseAlignment;
                 Assert.AreEqual (0, baln.AlignedSAMSequence.Pos);
                 // Currently fixed when generating the alignment, but not the read.
-                Assert.AreEqual ("6S1I105M1I32M", baln.AlignedSAMSequence.CIGAR);
+                Assert.AreEqual ("7S105M1I32M", baln.AlignedSAMSequence.CIGAR);
                 Assert.AreEqual (aln.PairwiseAlignedSequences.Count, 1);
                 Assert.AreEqual (Bio.IO.SAM.SAMFlags.QueryOnReverseStrand, baln.AlignedSAMSequence.Flag);
                 var refseq = aln.PairwiseAlignedSequences[0].FirstSequence;

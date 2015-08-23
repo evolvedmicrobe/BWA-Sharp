@@ -49,21 +49,32 @@ namespace Bio.BWA.MEM
 		/// </summary>
 		int b;
 		/// <summary>
-		/// Gap open penalty. default 6, A gap of size k costs q+k*r
+		/// Deletion open penalty. default 6, A gap of size k costs q+k*r
 		/// </summary>
-		int q;
+		int o_del;
 		/// <summary>
 		/// Gap extension penalty. defualt 1,  A gap of size k costs q+k*r
 		/// </summary>
-		int r;         // match score, mismatch penalty and gap open/extension penalty. A gap of size k costs q+k*r
-		/// <summary>
+		int e_del;
+        /// <summary>
+        /// Deletion open penalty. default 6, A gap of size k costs q+k*r
+        /// </summary>
+        int o_ins;
+        /// <summary>
+        /// Gap extension penalty. defualt 1,  A gap of size k costs q+k*r
+        /// </summary>
+        int e_ins;
+
+
+        /// <summary>
 		/// phred-scaled penalty for unpaired reads, default 17
 		/// </summary>
 		int pen_unpaired;       // phred-scaled penalty for unpaired reads
 		/// <summary>
 		/// clipping penalty. default 5, This score is not deducted from the DP score.
 		/// </summary>
-		int pen_clip;          
+		int pen_clip5;
+        int pen_clip3;
 		/// <summary>
 		/// band width, defualt 100
 		/// </summary>
@@ -71,7 +82,10 @@ namespace Bio.BWA.MEM
 		/// <summary>
 		/// The Z-dropoff. Default 100
 		/// </summary>
-		int zdrop;             
+		int zdrop;    
+
+        ulong max_mem_intv;
+
 		/// <summary>
 		/// Output score threshold; only affecting output. Default 30.
 		/// </summary>
@@ -84,6 +98,10 @@ namespace Bio.BWA.MEM
 		/// The minimum seed length.  Default 19.
 		/// </summary>
 		int min_seed_len;       // minimum seed length
+
+        int min_chain_weight;
+        int max_chain_extend;
+
 		/// <summary>
 		/// The split_factor. Default 1.5. Split into a seed if MEM is longer than min_seed_len*split_factor
 		/// </summary>
@@ -115,8 +133,12 @@ namespace Bio.BWA.MEM
 		/// <summary>
 		/// The chain_drop_ratio. Default 0.50. Drop a chain if its seed coverage is below chain_drop_ratio times the seed coverage of a better chain overlapping with the small chain
 		/// </summary>
-		float chain_drop_ratio; // drop a chain if its seed coverage is below chain_drop_ratio times the seed coverage of a better chain overlapping with the small chain
-		/// <summary>
+		float drop_ratio; // drop a chain if its seed coverage is below chain_drop_ratio times the seed coverage of a better chain overlapping with the small chain
+	
+        float XA_drop_ratio;
+        float mask_level_redun;
+        float mapQ_coef_len;
+        /// <summary>
 		/// Default - 10000 when estimating insert size distribution, skip pairs with insert longer than this value
 		/// </summary>
 		int max_ins;            // when estimating insert size distribution, skip pairs with insert longer than this value
@@ -125,6 +147,8 @@ namespace Bio.BWA.MEM
 		/// </summary>
 		int max_matesw;         // perform maximally max_matesw rounds of mate-SW for each end	
 		//int8_t mat[25];         // scoring matrix; mat[0] == 0 if unset
+
+        int max_XA_hits, max_XA_hits_alt;
 		/// <summary>
 		/// The mat.
 		/// </summary>
@@ -199,6 +223,10 @@ namespace Bio.BWA.MEM
 		/// the actual 2-bit encoded reference sequences with 'N' converted to a random base
 		/// </summary>
 		internal IntPtr pac;
+
+        internal int is_shm;
+        internal long l_mem;
+        internal IntPtr mem;
 	} 
 
 //	typedef struct {
@@ -215,6 +243,7 @@ namespace Bio.BWA.MEM
 		internal int len;
 		internal int n_ambs;
 		internal uint gi;
+        internal int ia_alt;
 		/// <summary>
 		/// char*
 		/// </summary>
@@ -279,6 +308,8 @@ namespace Bio.BWA.MEM
 		/// Query end
 		/// </summary>
 		internal int qe;     // [qb,qe): query sequence in the alignment
+
+        internal int rid;
 			/// <summary>
 			/// best local SW score
 			/// </summary>
@@ -291,6 +322,9 @@ namespace Bio.BWA.MEM
 	/// 2nd best SW score
 	/// </summary>
 		internal int sub;        // 2nd best SW score
+
+        internal int alt_sc;
+
 		/// <summary>
 		/// SW score of a tandem hit/
 		/// </summary>
@@ -311,7 +345,19 @@ namespace Bio.BWA.MEM
 		/// Index of the parent hit shadowing the current hit; <0 if primary
 		/// </summary>
 		internal int secondary;  // index of the parent hit shadowing the current hit; <0 if primary
+
+        internal int secondary_all;
+        /// <summary>
+        /// Length of the starting seed.
+        /// </summary>
+        internal int sedlen0;
+
+       
+        internal int n_compAndis_alt;
+        internal float frac_rep;
+        internal ulong hash;
    	}
+
 	//typedef struct { size_t n, m; mem_alnreg_t *a; } mem_alnreg_v;
 	[StructLayout(LayoutKind.Sequential)]
 	internal struct mem_alnreg_v
@@ -350,9 +396,9 @@ namespace Bio.BWA.MEM
 		/// </summary>
 		internal int flag;
 		/// <summary>
-		/// is_rev:1, mapq:8, NM:23;
+		/// is_rev:1, isAlt:1, mapq:8, NM:22;
 		/// </summary>
-		internal uint isRevAndMapQAndNM;
+		internal uint isRevAndisAltAndMapQAndNM;
 		/// <summary>
 		/// number of cigar operations
 		/// </summary>
@@ -362,8 +408,11 @@ namespace Bio.BWA.MEM
 		/// </summary>
 		internal IntPtr cigar;
 
+        internal IntPtr XA;
+
 		internal int score;
 		internal int sub;
+        internal int alt_sc;
 	}
 
 

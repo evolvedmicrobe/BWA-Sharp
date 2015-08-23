@@ -7,10 +7,6 @@
 #include "kseq.h" // for the FASTA/Q parser
 KSEQ_DECLARE(gzFile)
 
-#ifdef USE_MALLOC_WRAPPERS
-#  include "malloc_wrap.h"
-#endif
-
 int main(int argc, char *argv[])
 {
 	bwaidx_t *idx;
@@ -28,7 +24,6 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "Index load failed.\n");
 		exit(EXIT_FAILURE);
 	}
-	//ND-LOAD
 	fp = strcmp(argv[2], "-")? gzopen(argv[2], "r") : gzdopen(fileno(stdin), "r");
 	if (NULL == fp) {
 		fprintf(stderr, "Couldn't open %s : %s\n",
@@ -47,17 +42,11 @@ int main(int argc, char *argv[])
 			mem_aln_t a;
 			if (ar.a[i].secondary >= 0) continue; // skip secondary alignments
 			a = mem_reg2aln(opt, idx->bns, idx->pac, ks->seq.l, ks->seq.s, &ar.a[i]); // get forward-strand position and CIGAR
-			printf("%d\n",ar.a[i].rb );
-			printf("%d\n",ar.a[i].re );
-			printf("%d\n",ar.a[i].qb );
-			printf("%d\n",ar.a[i].qe );
-			
-			
 			// print alignment
-			err_printf("%s\t%c\t%s\t%ld\t%d\t", ks->name.s, "+-"[a.is_rev], idx->bns->anns[a.rid].name, (long)a.pos, a.mapq);
+			printf("%s\t%c\t%s\t%ld\t%d\t", ks->name.s, "+-"[a.is_rev], idx->bns->anns[a.rid].name, (long)a.pos, a.mapq);
 			for (k = 0; k < a.n_cigar; ++k) // print CIGAR
-				err_printf("%d%c", a.cigar[k]>>4, "MIDSH"[a.cigar[k]&0xf]);
-			err_printf("\t%d\n", a.NM); // print edit distance
+				printf("%d%c", a.cigar[k]>>4, "MIDSH"[a.cigar[k]&0xf]);
+			printf("\t%d\n", a.NM); // print edit distance
 			free(a.cigar); // don't forget to deallocate CIGAR
 		}
 		free(ar.a); // and deallocate the hit list
@@ -65,7 +54,7 @@ int main(int argc, char *argv[])
 
 	free(opt);
 	kseq_destroy(ks);
-	err_gzclose(fp);
+	gzclose(fp);
 	bwa_idx_destroy(idx);
 	return 0;
 }

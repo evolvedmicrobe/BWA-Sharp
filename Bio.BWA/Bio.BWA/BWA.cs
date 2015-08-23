@@ -124,16 +124,16 @@ namespace Bio.BWA.MEM
 						//free memory for cigar string
 						mem_nd_free_uint (originalCigarLocation);
 						//first bit has the reversed or not
-						bool isReversed = (a.isRevAndMapQAndNM & 1) == 0 ? false : true;
+                        bool isReversed = (a.isRevAndisAltAndMapQAndNM & 1) == 0 ? false : true;
                         if (isReversed) {
                             querySeq = querySeq.GetReverseComplementedSequence ();
                             querySeq.Metadata.Add (SequenceExtensions.ReversedSequenceMetadataKey, true); 
                         }
-						//is_rev:1, mapq:8, NM:23;
+						//is_rev:1, is_alt:1, mapq:8, NM:22;
 						//next 8 are the mapping quality
-						byte mapq=(byte) ((a.isRevAndMapQAndNM>>1)&0xFF);
+                        byte mapq=(byte) ((a.isRevAndisAltAndMapQAndNM >> 2) & 0xFF);
 						//and last 23 are edit distance
-						uint editDistance=a.isRevAndMapQAndNM>>9;
+                        uint editDistance= a.isRevAndisAltAndMapQAndNM >> 10;
 						// now let's make a new sequence
 						toReturn = new SAMAlignedSequence ();
 						// flag includes 0x100 for secondary alignment, and I believe that is the only one it could be at this point

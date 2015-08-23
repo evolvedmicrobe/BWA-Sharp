@@ -10,6 +10,7 @@ using Bio.Algorithms.Alignment;
 using Bio.IO.FastA;
 using Bio.IO.SAM;
 using Bio.Variant;
+using Bio.BWA.MEM;
 
 namespace Bio.BWA
 {
@@ -61,7 +62,11 @@ namespace Bio.BWA
                 Interlocked.Increment (ref AlignedReads);
                 var refSeq = fi.GetReferenceSection (aln.RName, aln.Pos, aln.RefEndPos + 1);
                 var expanded = expandAlignment (refSeq, aln);
-
+#if OLD_BWA
+                if (clipEnds) {
+                    CorrectEndMismatches (ref expanded, ref aln);
+                }
+#endif
                 var qseq = new QualitativeSequence(DnaAlphabet.Instance, FastQFormatType.Sanger, 
                     expanded.Item2.Select(x => x.BP).ToArray(),
                     expanded.Item2.Select(z=> (int) z.QV).ToArray(), false);
@@ -86,7 +91,8 @@ namespace Bio.BWA
             }
 
             var elements = CigarUtils.GetCigarElements (aln.CIGAR);
-            elements = CigarUtils.FilterLeadingAndTrailingInsertions (elements);
+            // This used to be necessary but was fixed in later BWA versions it seems.
+            //elements = CigarUtils.FilterLeadingAndTrailingInsertions (elements);
 
             int length = CigarUtils.GetAlignmentLengthAfterClipping (elements);
             var q = new List<BPandQV>(length);
@@ -143,6 +149,119 @@ namespace Bio.BWA
             }
             return new Tuple<List<byte>, List<BPandQV>> (r, q);
         }
+
+        #if OLD_BWA
+        /// <summary>
+        /// BWA MEM will report bases with a mismatch at the end rather than soft or hard clipping them.
+        /// Super annoying, but to maintain compatability with the default I fix this here.
+        /// TODO: FIX THIS!
+        /// </summary>
+        /// <param name="expanded">Expanded.</param>
+        /// <param name="aln">Aln.</param>
+        void CorrectEndMismatches( ref Tuple<List<byte>, List<BPandQV>> expanded, ref SAMAlignedSequence aln) {
+            var refseq = expanded.Item1;
+            var qseq = expanded.Item2;
+            // Fix mismatch in start
+            if (refseq [0] != qseq [0].BP) {
+
+                // Make sure we only have one mismatch
+                if (refseq.Count > 1 && qseq.Count > 1 &&
+                    refseq [1] != qseq [1].BP) {
+                    throw new BWAException ("BWA returned two mismatches at the start of the alignment.  This is a bug that should be reported.");
+                }
+
+                // Fix the cigar
+                var elements = CigarUtils.GetCigarElements (aln.CIGAR);
+                if (elements.First ().Operation == CigarOperations.SOFT_CLIP &&
+                    elements.Count > 2 &&
+                    elements [1].Operation == CigarOperations.ALN_MATCH) {
+                    var op = elements [0];
+                    op.Length += 1;
+                    elements [0] = op;
+                    var op2 = elements [1];
+                    op2.Length -= 1;
+                    elements [1] = op2;
+                } else if (elements.First ().Operation == CigarOperations.ALN_MATCH) {
+                    var op = new CigarElement (CigarOperations.SOFT_CLIP, 1);
+                    elements.Insert (0, op);
+                    var op2 = elements [1];
+                    op2.Length -= 1;
+                    elements [1] = op2;
+                } else {
+                    throw new BWAException ("Found mismatch at start of alignment, but could not correct because cigar did not start with match or soft clip character");
+                }
+
+                SAMAlignedSequenceHeader header = new SAMAlignedSequenceHeader ();
+                // Set invalid bin since it might no longer be accurate
+                header.Pos = aln.Pos + 1;
+                Console.WriteLine (header.Pos);
+                header.CIGAR = CigarUtils.CreateCigarString (elements);
+                header.Flag = aln.Flag;
+                header.ISize = aln.ISize;
+                header.MapQ = aln.MapQ;
+                header.MPos = aln.MPos;
+                header.MRNM = aln.MRNM;
+                header.QName = aln.QName;
+                header.RName = aln.RName;
+                SAMAlignedSequence n_aln = new SAMAlignedSequence (header);
+                n_aln.QuerySequence = aln.QuerySequence;
+                aln = n_aln;
+                var rnew = refseq.Skip (1).ToList ();
+                var qnew = qseq.Skip (1).ToList ();
+                expanded = new Tuple<List<byte>, List<BPandQV>> (rnew, qnew);
+                refseq = expanded.Item1;
+                qseq = expanded.Item2;
+
+            } 
+            // Fix end
+            if (refseq.Last () != qseq.Last ().BP) {
+                // Make sure we only have one mismatch
+                if (refseq.Count > 1 && qseq.Count > 1 &&
+                    refseq [refseq.Count - 2 ] != qseq [qseq.Count - 2].BP) {
+                    throw new BWAException ("BWA returned two mismatches at the end of the alignment.  This is a bug that should be reported.");
+                }
+
+                // Fix the cigar
+                var elements = CigarUtils.GetCigarElements (aln.CIGAR);
+                if (elements.Last ().Operation == CigarOperations.SOFT_CLIP &&
+                    elements.Count > 2 &&
+                    elements [elements.Count - 2].Operation == CigarOperations.ALN_MATCH) {
+                    var op = elements [elements.Count - 1];
+                    op.Length += 1;
+                    elements [elements.Count - 1] = op;
+                    var op2 = elements [elements.Count - 2];
+                    op2.Length -= 1;
+                    elements [elements.Count - 2] = op2;
+                } else if (elements.Last ().Operation == CigarOperations.ALN_MATCH) {
+                    var op = new CigarElement (CigarOperations.SOFT_CLIP, 1);
+                    elements.Add(op);
+                    var op2 = elements [elements.Count - 2];
+                    op2.Length -= 1;
+                    elements [elements.Count - 2] = op2;
+                } else {
+                    throw new BWAException ("Found mismatch at start of alignment, but could not correct because cigar did not start with match or soft clip character");
+                }
+
+                SAMAlignedSequenceHeader header = new SAMAlignedSequenceHeader ();
+                // Set invalid bin since it might no longer be accurate
+                header.CIGAR = CigarUtils.CreateCigarString (elements);
+                header.Flag = aln.Flag;
+                header.ISize = aln.ISize;
+                header.MapQ = aln.MapQ;
+                header.MPos = aln.MPos;
+                header.MRNM = aln.MRNM;
+                header.QName = aln.QName;
+                header.RName = aln.RName;
+                SAMAlignedSequence n_aln = new SAMAlignedSequence (header);
+                n_aln.QuerySequence = aln.QuerySequence;
+                aln = n_aln;
+                var rnew = refseq.Skip (1).ToList ();
+                var qnew = qseq.Skip (1).ToList ();
+                expanded = new Tuple<List<byte>, List<BPandQV>> (rnew, qnew);
+            }
+        }
+        #endif
+
 
         public void PrintRegionTree(string filename) {
             var sw = new System.IO.StreamWriter (filename);
