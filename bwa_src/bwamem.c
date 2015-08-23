@@ -1212,3 +1212,18 @@ void mem_process_seqs(const mem_opt_t *opt, const bwt_t *bwt, const bntseq_t *bn
 	if (bwa_verbose >= 3)
 		fprintf(stderr, "[M::%s] Processed %d reads in %.3f CPU sec, %.3f real sec\n", __func__, n, cputime() - ctime, realtime() - rtime);
 }
+
+//to free the mem_aln_t
+void mem_nd_free_mem_aln_t(mem_aln_t* pointer)
+{
+	free(pointer);
+}
+//to free the cigar string
+void mem_nd_free_uint(uint32_t* pointer)
+{
+	free(pointer);
+}
+void mem_nd_free_opts(mem_opt_t * pointer)
+{
+	free(pointer);
+}
