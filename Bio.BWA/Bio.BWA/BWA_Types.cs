@@ -138,6 +138,7 @@ namespace Bio.BWA.MEM
         float XA_drop_ratio;
         float mask_level_redun;
         float mapQ_coef_len;
+        int mapQ_coef_fac;
         /// <summary>
 		/// Default - 10000 when estimating insert size distribution, skip pairs with insert longer than this value
 		/// </summary>
