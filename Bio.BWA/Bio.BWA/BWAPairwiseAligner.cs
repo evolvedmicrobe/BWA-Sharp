@@ -86,7 +86,8 @@ namespace Bio.BWA
             }
 
             var elements = CigarUtils.GetCigarElements (aln.CIGAR);
-            elements = CigarUtils.FilterLeadingAndTrailingInsertions (elements);
+            // This used to be necessary but was fixed in later BWA versions it seems.
+            //elements = CigarUtils.FilterLeadingAndTrailingInsertions (elements);
 
             int length = CigarUtils.GetAlignmentLengthAfterClipping (elements);
             var q = new List<BPandQV>(length);
