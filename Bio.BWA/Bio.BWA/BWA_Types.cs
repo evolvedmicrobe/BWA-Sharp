@@ -133,7 +133,7 @@ namespace Bio.BWA.MEM
 		/// <summary>
 		/// The chain_drop_ratio. Default 0.50. Drop a chain if its seed coverage is below chain_drop_ratio times the seed coverage of a better chain overlapping with the small chain
 		/// </summary>
-		float chain_drop_ratio; // drop a chain if its seed coverage is below chain_drop_ratio times the seed coverage of a better chain overlapping with the small chain
+		float drop_ratio; // drop a chain if its seed coverage is below chain_drop_ratio times the seed coverage of a better chain overlapping with the small chain
 	
         float XA_drop_ratio;
         float mask_level_redun;
@@ -412,6 +412,7 @@ namespace Bio.BWA.MEM
 
 		internal int score;
 		internal int sub;
+        internal int alt_sc;
 	}
 
 
