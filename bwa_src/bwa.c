@@ -265,7 +265,7 @@ bwaidx_t *bwa_idx_load_from_disk(const char *hint, int which)
 		idx->bns = bns_restore(prefix);
 		for (i = c = 0; i < idx->bns->n_seqs; ++i)
 			if (idx->bns->anns[i].is_alt) ++c;
-		if (bwa_verbose >= 3)
+		if (bwa_verbose >= 4)
 			fprintf(stderr, "[M::%s] read %d ALT contigs\n", __func__, c);
 		if (which & BWA_IDX_PAC) {
 			idx->pac = calloc(idx->bns->l_pac/4+1, 1);
