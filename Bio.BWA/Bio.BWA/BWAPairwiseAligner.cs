@@ -34,14 +34,14 @@ namespace Bio.BWA
         string fasta_name;
         bool recordCoverageIntervals;
 
-        public BWAPairwiseAligner (string fasta_name, bool recordCoverageIntervals=false)
+        public BWAPairwiseAligner (string fasta_name, bool recordCoverageIntervals=false, bool usePacBioOptions=false)
         {
             this.fasta_name = fasta_name;
             this.recordCoverageIntervals = recordCoverageIntervals;
             if (recordCoverageIntervals) {
                 tree = new RegionTree ();
             }
-            bwa = new Bio.BWA.MEM.BWA (fasta_name);
+            bwa = new Bio.BWA.MEM.BWA (fasta_name, usePacBioOptions);
 
             var finfo = new FileInfo (fasta_name);
             if (finfo.Length > MAX_CACHED_FASTA_SIZE) {

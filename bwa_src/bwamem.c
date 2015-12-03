@@ -83,6 +83,27 @@ mem_opt_t *mem_opt_init()
 	return o;
 }
 
+mem_opt_t *mem_opt_pacbio_init()
+{
+    mem_opt_t *o = mem_opt_init();
+    
+    // Open and extension penalties
+    o->o_del = 1;
+    o->o_ins = 1;
+    o->e_del = o->e_ins = 1;
+    
+    o->b = 1;
+    o->split_factor = 10;
+    
+    o->min_chain_weight = 40;
+    o->min_seed_len = 17;
+    
+    o->pen_clip5 = o->pen_clip3 = 0;
+    
+    bwa_fill_scmat(o->a, o->b, o->mat);
+    return o;
+}
+
 /***************************
  * Collection SA invervals *
  ***************************/
