@@ -35,7 +35,8 @@ namespace Bio.BWA.MEM
 		/// write permissions on the source directory of an index has not yet been made.
 		/// </summary>
 		/// <param name="fastaFile">Fasta file.</param>
-		public BWA (string fastaFile)
+        /// <param name="usePacBioOptions">Use the PacBio options? (equivalent to -x pacbio).</param>
+        public BWA (string fastaFile, bool usePacBioOptions=false)
 		{
 			if (!BitConverter.IsLittleEndian) {
 				throw new BWAException("The BWA interface can only be used on little-endian machines");		
@@ -50,7 +51,7 @@ namespace Bio.BWA.MEM
 			loadIndex (fastaFile);
 			//load options
 			//TODO: allow access to options and changing there-of
-			opts = mem_opt_init ();
+            opts = usePacBioOptions ? mem_opt_pacbio_init() : mem_opt_init ();
 			if (opts == IntPtr.Zero) {
 				throw new BWAException("Could not load the BWA default options");
 			}
@@ -98,9 +99,12 @@ namespace Bio.BWA.MEM
                      * only secondary if it overlaps with the other alignments query start/end by 50%
                      * (or whatever the mask level option is set to).
                      * 
-                     * As a result, I also need to keep track of what the highest scoring PRIMARY alignment is
+                     * As a result, I also need to keep track of what the highest scoring PRIMARY alignment is.
+                     * In the case of two equivalently scoring primary alignments (yeah, that happens) I select the one with the 
+                     * lowest start position.
                      */                      
-					if(curAlign.secondary < 0  && curAlign.score > bestScore)
+                    if(curAlign.secondary < 0  && ( 
+                        (curAlign.score > bestScore) || (curAlign.score == bestScore && curAlign.rb < toReturn.Pos)))
 					{
                         bestScore = curAlign.score;
                         ISequence querySeq = seq;
@@ -287,6 +291,15 @@ namespace Bio.BWA.MEM
 		/// </summary>
 		[DllImport("bwacsharp")]
 		private static extern IntPtr mem_opt_init(); 
+
+
+        /// <summary>
+        /// Create the options for PacBio sequencing
+        /// This is a later addition to the library, should work but not
+        /// well tested yet.
+        /// </summary>
+        [DllImport("bwacsharp")]
+        private static extern IntPtr mem_opt_pacbio_init();
 		/// <summary>
 	 /// Find the aligned regions for one query sequence
 	 ///

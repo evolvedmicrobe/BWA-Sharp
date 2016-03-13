@@ -107,6 +107,7 @@ extern "C" {
 	const bwtintv_v *smem_next(smem_i *itr);
 
 	mem_opt_t *mem_opt_init(void);
+    mem_opt_t *mem_opt_pacbio_init(void);
 	void mem_fill_scmat(int a, int b, int8_t mat[25]);
 
 	/**
