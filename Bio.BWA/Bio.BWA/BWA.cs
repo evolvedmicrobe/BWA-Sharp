@@ -99,9 +99,12 @@ namespace Bio.BWA.MEM
                      * only secondary if it overlaps with the other alignments query start/end by 50%
                      * (or whatever the mask level option is set to).
                      * 
-                     * As a result, I also need to keep track of what the highest scoring PRIMARY alignment is
+                     * As a result, I also need to keep track of what the highest scoring PRIMARY alignment is.
+                     * In the case of two equivalently scoring primary alignments (yeah, that happens) I select the one with the 
+                     * lowest start position.
                      */                      
-					if(curAlign.secondary < 0  && curAlign.score > bestScore)
+                    if(curAlign.secondary < 0  && ( 
+                        (curAlign.score > bestScore) || (curAlign.score == bestScore && curAlign.rb < toReturn.Pos)))
 					{
                         bestScore = curAlign.score;
                         ISequence querySeq = seq;
