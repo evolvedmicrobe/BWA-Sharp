@@ -15,7 +15,7 @@ namespace TestBWA
     public static class TestBWA
     {
         static string base_dir = "../../../..";
-
+        //static string base_dir = "/Users/nigel/git/BWA-Sharp";
         static string fasta_name = Path.Combine(base_dir, "TestData/MT.fasta");
         static string screen_refs = Path.Combine(base_dir, "TestData/References.fna");
 
@@ -281,6 +281,53 @@ namespace TestBWA
                 Assert.AreEqual(queryseq, baln.AlignedQuerySeq);
                 Assert.AreEqual(refseq, baln.AlignedRefSeq);
             }   
+        }
+
+        [Test]
+        [Category("BWA")]
+        public static void TestAddingNodesThatOverlapsWithTwoExistingNodes() {
+            /* Here we test that a node that ovelaps with a region when added, does not generate 
+             * three nodes, but only two */
+            RegionTree rt = new RegionTree ();
+            string chrm = "1";
+            var left = new Region (chrm, 1, 5);
+            var right = new Region (chrm, 10, 20);
+            var middle = new Region (chrm, 3, 15);
+            rt.Add (left);
+            rt.Add (right);
+            rt.Add (middle);
+            Assert.AreEqual (1, rt.Count);
+
+            var node = rt.InOrderTraversal ().ToList ().First();
+            Assert.AreEqual (1, node.Start);
+            Assert.AreEqual (20, node.End);
+            Assert.AreEqual (chrm, node.Reference);
+
+
+            // Now for a more complicated example
+            var excludedRegion = new Region (chrm, 100, 200);
+            rt = new RegionTree ();
+            Random rv = new Random (56448638);
+            for (int i = 0; i < 500; i++) {
+                var s = rv.Next (1, 1000);
+                var e = s + rv.Next (1, 5);
+                var nr = new Region (chrm, s, e);
+                if (nr.CompareTo (excludedRegion) != 0) {
+                    rt.Add (nr);
+                }
+            }
+            var allnodes = rt.InOrderTraversal ().ToList ();
+            var pairs = Enumerable.Zip (allnodes.Take (allnodes.Count - 1), allnodes.Skip (1), (arg1, arg2) => new Tuple<Region, Region>(arg1, arg2)).ToList();
+            // Verify they return in sorted order
+            var sortedAndNoOverlap = !pairs.Any (x => x.Item1.CompareTo (x.Item2) >=0);
+            Assert.True (sortedAndNoOverlap);
+            // Does indexing count match actual count?
+            Assert.AreEqual (allnodes.Count, rt.Count);
+
+            // Now add one
+            rt.Add (new Region(chrm, excludedRegion.Start - 20, excludedRegion.End + 20));
+            Assert.AreEqual (156, rt.Count);
+
         }
     }
 }

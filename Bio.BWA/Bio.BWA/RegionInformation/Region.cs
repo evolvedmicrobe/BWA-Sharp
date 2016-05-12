@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Diagnostics;
 
 namespace Bio.BWA
 {
+    [DebuggerDisplay ("{Reference}:{Start}-{End}")]
     public class Region : IComparable<Region>
     {
         public string Reference;
@@ -22,7 +24,7 @@ namespace Bio.BWA
         public void Merge(Region other) {
             Start = Math.Min(Start, other.Start);
             End = Math.Max (End, other.End);
-            ObservationCount++;
+            ObservationCount += other.ObservationCount;
         }
         public override bool Equals (object obj)
         {
@@ -51,6 +53,27 @@ namespace Bio.BWA
             }
             return res;
         }
+
+        /// <summary>
+        /// Test if these two regions overlap.
+        /// </summary>
+        /// <param name="other">Other.</param>
+        public bool Overlaps (Region other)
+        {
+            return CompareTo (other) == 0;
+        }
+
+
+        /// <summary>
+        /// Returns true if it completely encapsulates the region.
+        /// </summary>
+        /// <returns>The region.</returns>
+        /// <param name="other">Other.</param>
+        public bool FullyContainsRegion (Region other)
+        {
+            return this.Start <= other.Start && this.End >= other.End;
+        }
+
         #endregion
     }
 }

@@ -5,25 +5,24 @@ using System.Diagnostics;
 namespace Bio.BWA
 {
     /// <summary>
-    ///  Holds genomic regions based on Arne Andersson Self Balancing Binary Search Tree.
+    ///  Holds genomic regions based on Binary Search Tree.
     /// </summary>
     public class RegionTree
     {
-        #region AATreeNode Class
+        #region BTreeNode Class
         [DebuggerDisplay("Value: {Value}")]
-        internal class AATreeNode
+        public class BTreeNode
         {
             /// <summary>
             /// Constructor to initialize null node.
             /// </summary>
-            public AATreeNode()
+            public BTreeNode()
             {
                 this.Left = this;
                 this.Right = this;
-                this.Level = 0;
             }
 
-            public AATreeNode(Region value, AATreeNode nullNode)
+            public BTreeNode(Region value, BTreeNode nullNode)
             {
                 this.Value = value;
                 this.Left = nullNode;
@@ -32,9 +31,10 @@ namespace Bio.BWA
             }
 
             public Region Value { get; set; }
-            public AATreeNode Left { get; set; }
-            public AATreeNode Right { get; set; }
+            public BTreeNode Left { get; set; }
+            public BTreeNode Right { get; set; }
             public int Level { get; set; }
+
         }
         #endregion
 
@@ -42,12 +42,12 @@ namespace Bio.BWA
         /// <summary>
         /// Holds null node.
         /// </summary>
-        private static AATreeNode NullNode = new AATreeNode(new Region(String.Empty, 0, 1), RegionTree.NullNode);
+        private static BTreeNode NullNode = new BTreeNode(new Region(String.Empty, 0, 1), RegionTree.NullNode);
 
         /// <summary>
         /// Holds Root node.n
         /// </summary>
-        private AATreeNode root;
+        private BTreeNode root;
 
         #endregion
 
@@ -88,14 +88,15 @@ namespace Bio.BWA
             bool result = false;
             if (this.root == RegionTree.NullNode)
             {
-                this.root = new AATreeNode(value, RegionTree.NullNode);
+                this.root = new BTreeNode(value, RegionTree.NullNode);
                 result = true;
             }
 
             if (!result)
             {
-                AATreeNode node = this.root;
-                Stack<AATreeNode> parentNodes = new Stack<AATreeNode>();
+                BTreeNode node = this.root;
+                Stack<BTreeNode> parentNodes = new Stack<BTreeNode>();
+                parentNodes.Push (node);
                 while (true)
                 {
                     int keyCompResult = value.CompareTo(node.Value);
@@ -103,7 +104,19 @@ namespace Bio.BWA
                     {
                         // key already exists.
                         result = false;
+                        // If the old node doesn't completely contain the new range
+                        // it is possible multiple existing nodes need to be merged, so
+                        // we'll look for those. 
+                        bool contained = node.Value.FullyContainsRegion (value);
                         node.Value.Merge (value);
+                        if (!contained) {
+                            // Have to check if we merge any child intervals
+                            var additionalNodes = findOverlappingChildNodes (node);
+                            foreach (var v in additionalNodes) {
+                                node.Value.Merge (v.Item1.Value);
+                                DeleteNode (v.Item1, v.Item2);
+                            }
+                        }
                         break;
                     }
                     else if (keyCompResult < 0)
@@ -111,7 +124,7 @@ namespace Bio.BWA
                         // go to left.
                         if (node.Left == RegionTree.NullNode)
                         {
-                            node.Left = new AATreeNode(value, RegionTree.NullNode);
+                            node.Left = new BTreeNode(value, RegionTree.NullNode);
                             result = true;
                             break;
                         }
@@ -126,7 +139,7 @@ namespace Bio.BWA
                         // go to right.
                         if (node.Right == RegionTree.NullNode)
                         {
-                            node.Right = new AATreeNode(value, RegionTree.NullNode);
+                            node.Right = new BTreeNode(value, RegionTree.NullNode);
                             result = true;
                             break;
                         }
@@ -141,7 +154,7 @@ namespace Bio.BWA
                 if (result)
                 {
                     parentNodes.Push(node);
-                    BalanceTreeAfterAdd(parentNodes);
+                   
                 }
             }
 
@@ -150,6 +163,96 @@ namespace Bio.BWA
                 Count++;
             }
         }
+
+
+        private Tuple<BTreeNode, BTreeNode> FindMinimumAndParent (BTreeNode start, BTreeNode parent)
+        {
+            if (start.Left == NullNode) {
+                return new Tuple<BTreeNode, BTreeNode> (start, parent);
+            } else {
+                return FindMinimumAndParent (start.Left, start);
+            }
+        }
+
+        /// <summary>
+        /// Deletes the node.
+        /// 
+        /// http://www.algolist.net/Data_structures/Binary_search_tree/Removal
+        /// 
+        /// </summary>
+        /// <returns>The node.</returns>
+        /// <param name="toDelete">To delete.</param>
+        /// <param name="parent">Parent.</param>
+        private void DeleteNode (BTreeNode toDelete, BTreeNode parent)
+        {
+            Count--;
+            // Is this a leaf node?
+            if (toDelete.Left == NullNode && toDelete.Right == NullNode) {
+                // just remove it
+                if (parent.Left == toDelete) {
+                    parent.Left = NullNode;
+                } else {
+                    parent.Right = NullNode;
+                }
+            } else if (toDelete.Left == NullNode || toDelete.Right == NullNode) {
+                // It has one child
+                // Delete the node and replace it with it's child
+                var child = toDelete.Left == NullNode ? toDelete.Right : toDelete.Left;
+                if (parent.Left == toDelete) {
+                    parent.Left = child;
+                } else {
+                    parent.Right = child;
+                }
+            } else {
+                // It has two children
+                // find minimum on the right, we get the parent at the same time
+                // to avoid finding it again during a recursion
+                var values = FindMinimumAndParent (toDelete.Right, parent);
+                var minNode = values.Item1;
+                var minsParent = values.Item2;
+
+                // Two cases, the parent is the node we are deleting, or it's something further down
+                if (minsParent != toDelete) {
+                    // Remove this node
+                    Count++; // Account for how we are making a new node somewhere
+                    DeleteNode (minNode, minsParent);
+                    minNode.Right = toDelete.Right;
+                }
+                minNode.Left = toDelete.Left;               
+                if (parent.Left == toDelete) {
+                    parent.Left = minNode;
+                } else {
+                    parent.Right = minNode;
+                }
+            }
+        }
+
+        private List<Tuple<BTreeNode, BTreeNode>> findOverlappingChildNodes (BTreeNode justMerged) {
+            var region = justMerged.Value;
+            // List of child/parent pairs
+            List<Tuple<BTreeNode, BTreeNode>> overlaps = new List<Tuple<BTreeNode, BTreeNode>> ();
+            var toVisit = new Stack<Tuple<BTreeNode, BTreeNode>> ();
+            toVisit.Push (new Tuple<BTreeNode, BTreeNode>(justMerged, NullNode));
+            while (toVisit.Count != 0) {
+                var currentTuple = toVisit.Pop ();
+                var currentNode = currentTuple.Item1;
+                var currentParent = currentTuple.Item2;
+                var comparison = currentNode.Value.CompareTo (region);
+                if (comparison == 0 && currentNode != justMerged) {
+                    overlaps.Add (currentTuple);
+                }
+                // No overlap, keep searching in same direction
+                if (currentNode.Left != NullNode && comparison >= 0) {
+                    toVisit.Push (new Tuple<BTreeNode, BTreeNode>(currentNode.Left, currentNode));
+                };
+                if (currentNode.Right != NullNode && comparison <= 0) {
+                    toVisit.Push (new Tuple<BTreeNode, BTreeNode> (currentNode.Right, currentNode));
+                    //toVisit.Push (new Tuple<BTreeNode, BTreeNode>(currentNode.Right, currentNode)); t
+                }
+            }
+            return overlaps;
+        }
+
 
 
         /// <summary>
@@ -162,7 +265,7 @@ namespace Bio.BWA
         internal bool TrySearch(Region value, out Region output)
         {
             bool result = false;
-            AATreeNode node;
+            BTreeNode node;
             node = RegionTree.NullNode;
 
             var currentNode = this.root;
@@ -217,15 +320,15 @@ namespace Bio.BWA
 
 
         // InOrder Traversal implementation.
-        private static IEnumerable<Region> InOrderTraversal(AATreeNode node)
+        private static IEnumerable<Region> InOrderTraversal(BTreeNode node)
         {
             if (node == RegionTree.NullNode)
             {
                 yield break;
             }
 
-            Stack<AATreeNode> nodes = new Stack<AATreeNode>();
-            AATreeNode currentNode = node;
+            Stack<BTreeNode> nodes = new Stack<BTreeNode>();
+            BTreeNode currentNode = node;
             while (nodes.Count > 0 || currentNode != RegionTree.NullNode)
             {
                 if (currentNode != RegionTree.NullNode)
@@ -243,16 +346,16 @@ namespace Bio.BWA
         }
 
         // PreOrder Traversal implementation.
-        private static IEnumerable<Region> PreOrderTraversal(AATreeNode node)
+        private static IEnumerable<Region> PreOrderTraversal(BTreeNode node)
         {
             if (node == RegionTree.NullNode)
             {
                 yield break;
             }
 
-            Stack<AATreeNode> stack = new Stack<AATreeNode>();
+            Stack<BTreeNode> stack = new Stack<BTreeNode>();
             stack.Push(node);
-            AATreeNode currentNode = RegionTree.NullNode;
+            BTreeNode currentNode = RegionTree.NullNode;
             while (stack.Count > 0)
             {
                 currentNode = stack.Pop();
@@ -271,15 +374,15 @@ namespace Bio.BWA
         }
 
         // PostOrder Traversal implementation.
-        private static IEnumerable<Region> PostOrderTraversal(AATreeNode node)
+        private static IEnumerable<Region> PostOrderTraversal(BTreeNode node)
         {
             if (node == RegionTree.NullNode)
             {
                 yield break;
             }
 
-            Stack<AATreeNode> nodes = new Stack<AATreeNode>();
-            AATreeNode currentNode = node;
+            Stack<BTreeNode> nodes = new Stack<BTreeNode>();
+            BTreeNode currentNode = node;
             while (true)
             {
                 if (currentNode != RegionTree.NullNode)
@@ -314,187 +417,6 @@ namespace Bio.BWA
                 }
             }
         }
-
-        // Tree Balancing After Adding an item
-        private void BalanceTreeAfterAdd(Stack<AATreeNode> parentNodes)
-        {
-            AATreeNode parentNode = null;
-            while (parentNodes.Count > 0)
-            {
-                var node = parentNodes.Pop();
-                if (parentNodes.Count > 0)
-                {
-                    parentNode = parentNodes.Peek();
-                }
-                else
-                {
-                    parentNode = null;
-                }
-
-                // maintain two properties
-                // 1. if a node and its left child have same level then rotate right.
-                // 2. if a node, its right child and right node's right child have same level then rotate left.
-                if (parentNode != null)
-                {
-                    bool isLeftNode = parentNode.Left == node;
-                    RotateRight(parentNode, isLeftNode ? parentNode.Left : parentNode.Right);
-                    RotateLeft(parentNode, isLeftNode ? parentNode.Left : parentNode.Right);
-                }
-                else
-                {
-                    // check root node.
-                    RotateRight(null, this.root);
-                    RotateLeft(null, this.root);
-                }
-            }
-        }
-
-        // Tree Balancing After remving an item
-        private void BalanceTreeAfterRemove(Stack<AATreeNode> parentNodes)
-        {
-            AATreeNode parentNode = null;
-            // balance the tree.
-            while (parentNodes.Count > 0)
-            {
-                var node = parentNodes.Pop();
-                if ((node.Level - node.Left.Level) > 1 || (node.Level - node.Right.Level) > 1)
-                {
-                    node.Level--;
-                    if (node.Right.Level > node.Level)
-                    {
-                        node.Right.Level = node.Level;
-                    }
-
-                    if (parentNodes.Count > 0)
-                    {
-                        parentNode = parentNodes.Peek();
-                    }
-                    else
-                    {
-                        parentNode = null;
-                    }
-
-                    if (parentNode != null)
-                    {
-                        bool isLeftNode = parentNode.Left == node;
-
-                        if (RotateRight(parentNode, node))
-                        {
-                            // get the new child from parent.
-                            node = isLeftNode ? parentNode.Left : parentNode.Right;
-                        }
-
-                        if (RotateRight(node, node.Right))
-
-                        if (RotateRight(node.Right, node.Right.Right))
-
-                        if (RotateLeft(parentNode, node))
-                        {
-                            node = isLeftNode ? parentNode.Left : parentNode.Right;
-                        }
-
-                        RotateLeft(node, node.Right);
-                    }
-                    else
-                    {
-                        RotateRight(null, this.root);
-                        RotateRight(this.root, this.root.Right);
-                        RotateRight(this.root.Right, this.root.Right.Right);
-                        RotateLeft(null, this.root);
-                        RotateLeft(this.root, this.root.Right);
-                    }
-                }
-            }
-        }
-
-        /// <summary>
-        /// Split or Rotate left.
-        /// </summary>
-        /// <param name="parentNode"></param>
-        /// <param name="node"></param>
-        /// <returns></returns>
-        private bool RotateLeft(AATreeNode parentNode, AATreeNode node)
-        {
-            bool result = false;
-            if (node == RegionTree.NullNode)
-            {
-                return result;
-            }
-
-            if (node.Level == node.Right.Level && node.Right.Level == node.Right.Right.Level)
-            {
-                // rotate left.
-                var nodeToMoveUp = node.Right;
-                node.Right = nodeToMoveUp.Left;
-                nodeToMoveUp.Left = node;
-                if (parentNode != null)
-                {
-                    if (parentNode.Left == node)
-                    {
-                        parentNode.Left = nodeToMoveUp;
-                        parentNode.Left.Level++;
-                    }
-                    else
-                    {
-                        parentNode.Right = nodeToMoveUp;
-                        parentNode.Right.Level++;
-                    }
-                }
-                else
-                {
-                    this.root = nodeToMoveUp;
-                    this.root.Level++;
-                }
-
-                result = true;
-            }
-
-            return result;
-        }
-
-        /// <summary>
-        /// Skew or Rotate right.
-        /// </summary>
-        /// <param name="parentNode"></param>
-        /// <param name="node"></param>
-        /// <returns></returns>
-        private bool RotateRight(AATreeNode parentNode, AATreeNode node)
-        {
-            bool result = false;
-            if (node == RegionTree.NullNode)
-            {
-                return result;
-            }
-
-            if (node.Level == node.Left.Level)
-            {
-                // rotate right.
-                var nodeToMoveUp = node.Left;
-                node.Left = nodeToMoveUp.Right;
-                nodeToMoveUp.Right = node;
-                if (parentNode != null)
-                {
-                    if (parentNode.Left == node)
-                    {
-                        parentNode.Left = nodeToMoveUp;
-
-                    }
-                    else
-                    {
-                        parentNode.Right = nodeToMoveUp;
-                    }
-                }
-                else
-                {
-                    this.root = nodeToMoveUp;
-                }
-
-                result = true;
-            }
-
-            return result;
-        }
-
         #endregion
     }
 
