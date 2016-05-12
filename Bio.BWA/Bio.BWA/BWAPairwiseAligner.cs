@@ -266,7 +266,7 @@ namespace Bio.BWA
         public void PrintRegionTree(string filename) {
             var sw = new System.IO.StreamWriter (filename);
             sw.WriteLine ("Chr,Start,End,Count");
-            foreach (var r in tree.PreOrderTraversal()) {
+            foreach (var r in tree.InOrderTraversal()) {
                 sw.WriteLine (r.Reference + "," + r.Start + "," + r.End + "," + r.ObservationCount);
             }
             sw.Close ();
