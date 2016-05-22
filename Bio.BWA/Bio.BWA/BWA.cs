@@ -91,7 +91,7 @@ namespace Bio.BWA.MEM
 				int n_aligns = (int)ar.n;
 				//save memory location to free later
 				IntPtr initialMemLocation = ar.a;
-                int bestScore = int.MinValue;
+                BestAlignmentScore bestScore = new BestAlignmentScore() {score = int.MinValue};
 				for (int i=0; i<n_aligns; i++) {
 					mem_alnreg_t curAlign = *(mem_alnreg_t*)ar.a;
                     /* Ignore secondary alignments, but note that the
@@ -103,12 +103,13 @@ namespace Bio.BWA.MEM
                      * In the case of two equivalently scoring primary alignments (yeah, that happens) I select the one with the 
                      * lowest start position.
                      */                      
-                    if(curAlign.secondary < 0  && ( 
-                        (curAlign.score > bestScore) || (curAlign.score == bestScore && curAlign.rb < toReturn.Pos)))
+                    if(curAlign.secondary < 0  && bestScore.IsOrderedHigher(curAlign))
 					{
-                        bestScore = curAlign.score;
+                        bestScore.score = curAlign.score;
+                        bestScore.rb = curAlign.rb;
+                        bestScore.qb = curAlign.qb;
                         ISequence querySeq = seq;
-						//get forward strand positiion and cigar
+						//get forward strand position and cigar
 						//a = mem_reg2aln(opt, idx->bns, idx->pac, ks->seq.l, ks->seq.s, &ar.a[i]); // get forward-strand position and CIGAR
 						mem_aln_t a = mem_reg2aln (opts, bwaidx_as_struct.bns,bwaidx_as_struct.pac, data.Length, (IntPtr)pdata, ar.a);
 						//unpack the cigar string, which is encoded in the BAM format
@@ -348,5 +349,56 @@ namespace Bio.BWA.MEM
 		[DllImport("bwacsharp")] internal static extern int bwa_index(int argc, string[] argv); // the "index" command
 	#endregion
 	}
+
+    /// <summary>
+    /// This is to keep track of the best alignments possible.  Two alignments can have equal scores, 
+    /// in which case I want to tie break based on position and 
+    /// </summary>
+    internal struct BestAlignmentScore 
+    {
+        /// <summary>
+        /// The score of the best alignment
+        /// </summary>
+        internal int score;
+        /// <summary>
+        /// The rb of the best alignment.  Note that this is not the
+        /// genomic position of the alignment, but the coordinate in
+        /// the database, which is converted internally to a Pos.
+        /// </summary>
+        internal long rb;
+        /// <summary>
+        /// The query start position of the alignment.  In the case
+        /// that portions of the read align to the exact same position
+        /// with the exact same score.
+        /// </summary>
+        internal long qb;
+
+        /// <summary>
+        /// Returns true if the alignment should be given precedent over the 
+        /// current alignment.   We sort by score/rb/qb, and throw an exception
+        /// if we cannot determinstically sort after that (which will hopefully never happen).
+        /// </summary>
+        /// <returns>The ordered higher.</returns>
+        /// <param name="other">Other.</param>
+
+        internal bool IsOrderedHigher (mem_alnreg_t other)
+        {
+            if (other.score > this.score) {
+                return true;
+            } else if (other.score == score) {
+                if (other.rb < this.rb) {
+                    return true;
+                } else if (other.rb == this.rb) {
+                    if (other.qb < this.qb) {
+                        return true;
+                    } else if (other.qb == this.qb) {
+                        //TODO: Check BWA Internals to see if I can verify this will never occur, it certainly shouldn't.
+                        throw new Exception ("Not enough information available to deterministically sort alignments using Score/rb/qb");
+                    }
+                }
+            }
+            return false;
+        }
+    }
 }
 
