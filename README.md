@@ -1,6 +1,6 @@
 [![Build Status](https://travis-ci.org/evolvedmicrobe/BWA-Sharp.svg)](https://travis-ci.org/evolvedmicrobe/BWA-Sharp)
 
-###Description
+## Description
 
 This library is a C# wrapper around the bwa mem program.  It allows C# (or python or F#) code to call BWA from obtain fully typed SAMAlignment object compatible with .NET Bio classes.  It differs from previous wrappers around this program as it does not require the user to run the "index" command prior to calling this program, and also does not do the interop through a C++ intermediate.  
 
@@ -10,7 +10,8 @@ This C# library comes as a .dll file.  This file depends on a shared library tha
 
 Because the original BWA program has a dependencies on linux, this library only works on posix systems that are little endian and are executing as 64 bit programs.
 
-###Getting started
+### Getting started
+
 	//Create and query
 	var bwa =new BWA("myFile.fasta");
 	var query = new Sequence(DnaAlphabet.Instance,"CGCATTCCTACTACTCAACTTAAA");
@@ -18,7 +19,7 @@ Because the original BWA program has a dependencies on linux, this library only 
 	//Free unmanaged resources
 	bwa.Dispose()
 
-###Citing the original BWA
+### Citing the original BWA
 
 * Li H. and Durbin R. (2009) Fast and accurate short read alignment with
  Burrows-Wheeler transform. *Bioinformatics*, **25**, 1754-1760. [PMID:
